@@ -1,4 +1,6 @@
-import { logger } from './logger';
+import { createLogger } from './logger';
+
+const logger = createLogger('env');
 
 const REQUIRED_KEYS = [
 	'NODE_ENV',

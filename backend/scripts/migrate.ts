@@ -1,7 +1,9 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { sql } from '../src/db/client';
-import { logger } from '../src/utils/logger';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('migrate');
 
 const migrationsDir = join(import.meta.dir, '../src/db/migrations');
 

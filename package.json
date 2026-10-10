@@ -7,19 +7,20 @@
 		"backend"
 	],
 	"scripts": {
-		"dev": "bun run --filter '*' --parallel dev",
-		"dev:frontend": "bun --cwd frontend run dev",
-		"dev:backend": "bun --cwd backend run dev",
+		"dev": "concurrently -n api,web -c cyan.bold,magenta.bold --kill-others-on-fail \"bun run dev:backend\" \"bun run dev:frontend\"",
+		"dev:frontend": "bun run --cwd frontend dev",
+		"dev:backend": "bun run --cwd backend dev",
 		"lint": "eslint .",
 		"format": "prettier --write .",
-		"test:frontend": "bun --cwd frontend run test",
-		"test:backend": "bun --cwd backend run test"
+		"test:frontend": "bun run --cwd frontend test",
+		"test:backend": "bun run --cwd backend test"
 	},
 	"devDependencies": {
-		"eslint": "^9.0.0",
 		"@eslint/js": "^9.0.0",
-		"typescript-eslint": "^8.0.0",
+		"concurrently": "^10.0.6",
+		"eslint": "^9.0.0",
 		"eslint-plugin-vue": "^9.28.0",
-		"prettier": "^3.0.0"
+		"prettier": "^3.0.0",
+		"typescript-eslint": "^8.0.0"
 	}
 }

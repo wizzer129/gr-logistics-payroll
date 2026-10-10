@@ -25,6 +25,8 @@
 		"summaryTotal": "Total General",
 		"employeeCut": "Parte del Empleado (42%)",
 		"totalPay": "Pago Total",
+		"weekOf": "Semana Del",
+		"weekRange": "Semana: {start} - {end}",
 		"storeName": "Nombre/Número de Tienda",
 		"date": "Fecha",
 		"pay": "Pago",

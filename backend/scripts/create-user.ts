@@ -1,7 +1,9 @@
 import { parseArgs } from 'node:util';
 import { sql } from '../src/db/client';
 import { hashPassword } from '../src/services/auth-service';
-import { logger } from '../src/utils/logger';
+import { createLogger } from '../src/utils/logger';
+
+const logger = createLogger('create-user');
 
 const { values } = parseArgs({
 	args: Bun.argv.slice(2),

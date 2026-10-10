@@ -1,15 +1,24 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePaymentProcessingStore, type Load } from '../store/payment-processing-store';
+import { parseLocalDate } from '../utils/week';
 import LoadForm from '../components/payment-processing/LoadForm.vue';
 import LoadList from '../components/payment-processing/LoadList.vue';
 import PaymentSummary from '../components/payment-processing/PaymentSummary.vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const store = usePaymentProcessingStore();
 
 const employees = ref<{ id: string; firstName: string; lastName: string }[]>([]);
+
+const weekRangeLabel = computed(() => {
+	const formatter = new Intl.DateTimeFormat(locale.value, { month: 'short', day: 'numeric' });
+	return t('payment.weekRange', {
+		start: formatter.format(parseLocalDate(store.weekRange.weekStart)),
+		end: formatter.format(parseLocalDate(store.weekRange.weekEnd)),
+	});
+});
 
 function onAddLoad(load: Load): void {
 	store.addLoad(load);
@@ -51,14 +60,25 @@ function onPrint(): void {
 
 <template>
 	<v-container>
-		<v-select
-			v-model="store.employeeId"
-			:items="employees"
-			item-title="lastName"
-			item-value="id"
-			:label="t('dashboard.selectEmployee')"
-			class="mb-4"
-		/>
+		<v-row>
+			<v-col cols="12" md="6">
+				<v-select
+					v-model="store.employeeId"
+					:items="employees"
+					item-title="lastName"
+					item-value="id"
+					:label="t('dashboard.selectEmployee')"
+				/>
+			</v-col>
+			<v-col cols="12" md="6">
+				<v-text-field
+					v-model="store.selectedDate"
+					:label="t('payment.weekOf')"
+					type="date"
+				/>
+				<div class="text-caption text-medium-emphasis mt-n4 mb-2">{{ weekRangeLabel }}</div>
+			</v-col>
+		</v-row>
 
 		<v-row>
 			<v-col cols="12" md="6">

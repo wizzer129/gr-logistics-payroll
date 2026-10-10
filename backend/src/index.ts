@@ -1,5 +1,7 @@
 import { assertEnv, env } from './utils/env';
-import { logger } from './utils/logger';
+import { createLogger } from './utils/logger';
+
+const logger = createLogger('server');
 import { HttpError, requireUser } from './middleware/auth';
 import { login, logout, me } from './controllers/auth-controller';
 import {

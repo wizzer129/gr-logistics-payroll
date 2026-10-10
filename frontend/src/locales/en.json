@@ -25,6 +25,8 @@
 		"summaryTotal": "Summary Total",
 		"employeeCut": "Employee Cut (42%)",
 		"totalPay": "Total Pay",
+		"weekOf": "Week Of",
+		"weekRange": "Week: {start} - {end}",
 		"storeName": "Store Name/Number",
 		"date": "Date",
 		"pay": "Payment",

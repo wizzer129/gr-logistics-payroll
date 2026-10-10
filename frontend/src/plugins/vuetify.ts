@@ -23,6 +23,12 @@ export const vuetify = createVuetify({
 	theme: {
 		defaultTheme: detectTheme(),
 	},
+	defaults: {
+		VTextField: { variant: 'outlined' },
+		VSelect: { variant: 'solo-filled' },
+		VAutocomplete: { variant: 'solo-filled' },
+		VCombobox: { variant: 'solo-filled' },
+	},
 });
 
 export function currentTheme(): ThemeName {

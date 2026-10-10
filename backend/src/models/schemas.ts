@@ -17,7 +17,8 @@ export const loadSchema = z.object({
 	storeName: z.string().min(1),
 	loadDate: z.string().date(),
 	pay: z.number().nonnegative(),
-	extraPay: z.number().nonnegative().default(0),
+	// Extra pay is optional on input — omitted/undefined defaults to 0.
+	extraPay: z.number().nonnegative().optional().default(0),
 });
 
 export const weeklyLogSchema = z.object({

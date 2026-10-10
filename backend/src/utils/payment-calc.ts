@@ -13,6 +13,6 @@ export function calculateEmployeeCut(summaryTotal: number): {
 	return { employeeCut, roundedPay: roundToDollar(employeeCut) };
 }
 
-export function sumLoads(loads: { pay: number; extraPay: number }[]): number {
-	return loads.reduce((total, load) => total + load.pay + load.extraPay, 0);
+export function sumLoads(loads: { pay: number; extraPay?: number }[]): number {
+	return loads.reduce((total, load) => total + load.pay + (load.extraPay ?? 0), 0);
 }

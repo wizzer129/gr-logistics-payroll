@@ -39,9 +39,13 @@ async function onLogout(): Promise<void> {
 </script>
 
 <template>
-	<v-app-bar :title="t('app.title')">
+	<v-app-bar :title="t('app.title')" elevation="0">
 		<template #prepend>
-			<v-app-bar-nav-icon :aria-label="t('nav.openMenu')" @click="drawerOpen = !drawerOpen" />
+			<v-app-bar-nav-icon
+				:aria-label="t('nav.openMenu')"
+				elevation="0"
+				@click="drawerOpen = !drawerOpen"
+			/>
 		</template>
 
 		<v-spacer />
