@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.development
+.env.production
+*.log
+.DS_Store
+coverage/
+cypress/videos/
+cypress/screenshots/
+.cache/

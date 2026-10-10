@@ -1,0 +1,42 @@
+{
+	"app": {
+		"title": "GR Logistics"
+	},
+	"auth": {
+		"login": "Iniciar Sesión",
+		"email": "Correo Electrónico",
+		"password": "Contraseña",
+		"logout": "Cerrar Sesión"
+	},
+	"nav": {
+		"dashboard": "Panel",
+		"paymentProcessing": "Procesamiento de Pagos",
+		"editPayment": "Editar Pago",
+		"employees": "Empleados"
+	},
+	"dashboard": {
+		"ytdSummary": "Resumen del Año",
+		"employeeSummary": "Resumen del Empleado",
+		"selectEmployee": "Seleccionar Empleado"
+	},
+	"payment": {
+		"summaryTotal": "Total General",
+		"employeeCut": "Parte del Empleado (42%)",
+		"totalPay": "Pago Total",
+		"storeName": "Nombre/Número de Tienda",
+		"date": "Fecha",
+		"pay": "Pago",
+		"extraPay": "Pago Extra",
+		"complete": "Completar",
+		"print": "Imprimir",
+		"addManualLoad": "Agregar Carga Manualmente",
+		"uploadScreenshot": "Subir Captura de Pantalla"
+	},
+	"employees": {
+		"add": "Agregar Empleado",
+		"edit": "Editar Empleado",
+		"delete": "Eliminar Empleado",
+		"firstName": "Nombre",
+		"lastName": "Apellido"
+	}
+}

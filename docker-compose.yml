@@ -1,0 +1,31 @@
+services:
+    db:
+        image: postgres:16-alpine
+        environment:
+            POSTGRES_USER: gr_logistics
+            POSTGRES_PASSWORD: dev_password
+            POSTGRES_DB: gr_logistics
+        ports:
+            - '5432:5432'
+        volumes:
+            - gr_logistics_db:/var/lib/postgresql/data
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U gr_logistics']
+            interval: 5s
+            timeout: 5s
+            retries: 10
+
+    backend:
+        build: ./backend
+        env_file:
+            - ./backend/.env.development
+        environment:
+            DATABASE_URL: postgres://gr_logistics:dev_password@db:5432/gr_logistics
+        ports:
+            - '3000:3000'
+        depends_on:
+            db:
+                condition: service_healthy
+
+volumes:
+    gr_logistics_db:
