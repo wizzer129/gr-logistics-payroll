@@ -1,7 +1,7 @@
 import { assertEnv, env } from './utils/env';
 import { logger } from './utils/logger';
 import { HttpError, requireUser } from './middleware/auth';
-import { login, logout } from './controllers/auth-controller';
+import { login, logout, me } from './controllers/auth-controller';
 import {
 	createEmployee,
 	deleteEmployee,
@@ -67,6 +67,9 @@ const server = Bun.serve({
 		},
 		'/api/auth/logout': {
 			POST: (req) => handle(req, () => logout(req)),
+		},
+		'/api/auth/me': {
+			GET: (req) => handle(req, async () => me(await requireUser(req))),
 		},
 
 		'/api/employees': {

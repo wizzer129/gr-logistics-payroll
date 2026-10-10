@@ -7,6 +7,7 @@
 		"backend"
 	],
 	"scripts": {
+		"dev": "bun run --filter '*' --parallel dev",
 		"dev:frontend": "bun --cwd frontend run dev",
 		"dev:backend": "bun --cwd backend run dev",
 		"lint": "eslint .",

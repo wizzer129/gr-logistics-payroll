@@ -12,7 +12,9 @@
 		"dashboard": "Panel",
 		"paymentProcessing": "Procesamiento de Pagos",
 		"editPayment": "Editar Pago",
-		"employees": "Empleados"
+		"employees": "Empleados",
+		"openMenu": "Abrir menú de navegación",
+		"toggleTheme": "Alternar modo oscuro"
 	},
 	"dashboard": {
 		"ytdSummary": "Resumen del Año",

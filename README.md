@@ -12,6 +12,8 @@ docker compose up -d db
 bun run --cwd backend migrate
 bun run --cwd backend create-user --email admin@example.com --password changeme
 
+bun run dev             # backend (:3000) + frontend (:5173) concurrently, both with hot reload
+# or individually:
 bun run dev:backend     # http://localhost:3000
 bun run dev:frontend    # http://localhost:5173
 ```

@@ -4,6 +4,7 @@ import App from './App.vue';
 import router from './router';
 import { vuetify } from './plugins/vuetify';
 import { i18n, localeRef } from './plugins/i18n';
+import { useAuthStore } from './store/auth-store';
 
 const app = createApp(App);
 
@@ -20,4 +21,8 @@ watch(
 	{ immediate: true },
 );
 
-app.mount('#app');
+// Reconcile the locally-cached user with the session cookie before the router's
+// first navigation, so a page refresh doesn't briefly/incorrectly bounce to login.
+useAuthStore()
+	.restoreSession()
+	.finally(() => app.mount('#app'));

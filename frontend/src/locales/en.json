@@ -12,7 +12,9 @@
 		"dashboard": "Dashboard",
 		"paymentProcessing": "Payment Processing",
 		"editPayment": "Edit Payment",
-		"employees": "Employees"
+		"employees": "Employees",
+		"openMenu": "Open navigation menu",
+		"toggleTheme": "Toggle dark mode"
 	},
 	"dashboard": {
 		"ytdSummary": "Year-to-Date Summary",

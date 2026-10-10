@@ -8,7 +8,7 @@ import {
 	setSessionCookie,
 	verifyPassword,
 } from '../services/auth-service';
-import { HttpError } from '../middleware/auth';
+import { AuthUser, HttpError } from '../middleware/auth';
 
 export async function login(req: Request): Promise<Response> {
 	const body = loginSchema.parse(await req.json());
@@ -28,6 +28,10 @@ export async function login(req: Request): Promise<Response> {
 	return new Response(JSON.stringify({ id: user.id, email: user.email, role: user.role }), {
 		headers,
 	});
+}
+
+export async function me(user: AuthUser): Promise<Response> {
+	return Response.json(user);
 }
 
 export async function logout(req: Request): Promise<Response> {
