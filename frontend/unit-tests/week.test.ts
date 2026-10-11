@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { getWeekRange } from '../src/utils/week';
+import { formatMonthDay, getWeekRange } from '../src/utils/week';
 
 describe('getWeekRange', () => {
 	test('a mid-week date resolves to its Sunday-Saturday week', () => {
@@ -30,5 +30,21 @@ describe('getWeekRange', () => {
 			weekStart: '2026-10-25',
 			weekEnd: '2026-10-31',
 		});
+	});
+});
+
+describe('formatMonthDay', () => {
+	test('formats a plain date as "Month Day"', () => {
+		expect(formatMonthDay('2026-01-04', 'en')).toBe('January 4');
+	});
+
+	test('formats a full ISO datetime (as returned by the API) the same way', () => {
+		expect(formatMonthDay('2026-01-04T00:00:00.000Z', 'en')).toBe('January 4');
+	});
+
+	test('never shifts a day backward across timezones', () => {
+		// A UTC-midnight timestamp is the classic trap: new Date(iso) in a negative-offset
+		// timezone would render as the previous day. formatMonthDay must not do that.
+		expect(formatMonthDay('2026-01-01T00:00:00.000Z', 'en')).toBe('January 1');
 	});
 });

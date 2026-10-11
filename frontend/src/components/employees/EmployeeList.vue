@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 
-export type Employee = { id: string; firstName: string; lastName: string; email?: string };
+export type Employee = {
+	id: string;
+	firstName: string;
+	lastName: string;
+	email?: string;
+	payRatePercent: number;
+};
 
 const { t } = useI18n();
 defineProps<{ employees: Employee[] }>();
@@ -15,6 +21,7 @@ const emit = defineEmits<{ edit: [employee: Employee]; delete: [employee: Employ
 				<th>{{ t('employees.firstName') }}</th>
 				<th>{{ t('employees.lastName') }}</th>
 				<th>{{ t('auth.email') }}</th>
+				<th>{{ t('employees.payRatePercent') }}</th>
 				<th />
 			</tr>
 		</thead>
@@ -23,6 +30,7 @@ const emit = defineEmits<{ edit: [employee: Employee]; delete: [employee: Employ
 				<td>{{ employee.firstName }}</td>
 				<td>{{ employee.lastName }}</td>
 				<td>{{ employee.email }}</td>
+				<td>{{ employee.payRatePercent }}%</td>
 				<td>
 					<v-btn
 						icon="mdi-pencil"

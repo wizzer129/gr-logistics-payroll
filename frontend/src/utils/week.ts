@@ -11,6 +11,14 @@ export function toIsoDate(date: Date): string {
 	return `${year}-${month}-${day}`;
 }
 
+/** Formats an API date — plain "YYYY-MM-DD" or a full ISO datetime ("...T00:00:00.000Z") —
+ * as "Month Day" (e.g. "January 4") in the given locale, parsed as a local calendar date
+ * so it never shifts a day backward/forward across timezones. */
+export function formatMonthDay(isoDateOrDateTime: string, locale: string): string {
+	const date = parseLocalDate(isoDateOrDateTime.slice(0, 10));
+	return new Intl.DateTimeFormat(locale, { month: 'long', day: 'numeric' }).format(date);
+}
+
 export type WeekRange = { weekStart: string; weekEnd: string };
 
 /** Sunday–Saturday week containing the given date. */

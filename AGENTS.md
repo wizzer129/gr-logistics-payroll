@@ -23,10 +23,24 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
   `Bun.sql`'s tagged-template parameterization (`` sql`... WHERE id = ${id}` ``) — never
   string-concatenate a query. This is the one place hand-rolled SQL needs the discipline
   an ORM would otherwise enforce, given the data is financial.
+- **Every `numeric`/`decimal` column comes back from `Bun.sql` as a string**, not a JS
+  number (precision-safe driver behavior, no config flag to change it — confirmed against
+  the driver directly). `vue-i18n`'s `n()` throws `SyntaxError: Invalid arguments` on a
+  non-number, so any endpoint returning `pay`, `extra_pay`, `summary_total`, or
+  `employee_cut` **must** run it through `toNum()` (`backend/src/utils/sql-numeric.ts`)
+  before `Response.json(...)` — every controller that touches money already does this;
+  match the pattern in any new one rather than relying on JSON serialization to "just work."
 - **Zod** is the one validation dependency kept on the backend (money fields need real
   validation + good error messages). **Pino was rejected** in favor of a hand-rolled
   logger (`backend/src/utils/logger.ts`) — see "Logging" below before adding a logging
   package.
+- **E2E is Playwright**, not Cypress (the frontend started with Cypress — see
+  `PROJECT_PLAN.md`'s history if you're wondering why `cypress.config.ts` isn't there — it
+  was replaced). Cypress's config loader choked on this repo's ESM setup, and Playwright's
+  plain programmatic API is also what external browser-driving tools (e.g. `chromium-cli`)
+  are built on — worth it for an agent-maintained repo. Specs are `frontend/e2e-tests/*.spec.ts`,
+  config is `frontend/playwright.config.ts` (its `webServer` auto-starts the dev server, so
+  `bun run e2e` needs nothing else running first).
 
 ## Business rules (do not "fix" these — they're intentional)
 
@@ -36,19 +50,32 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
   `.49` and below rounds down (`$120.50 → $121`, `$120.49 → $120`). This was explicitly
   confirmed with the project owner — don't "correct" it to banker's rounding or similar.
 - **Pay weeks run Sunday–Saturday** (`frontend/src/utils/week.ts`'s `getWeekRange`,
-  `employee_weekly_logs.week_start`/`week_end`). Confirmed convention, not a guess.
+  `employee_paycheck_logs.week_start`/`week_end`). Confirmed convention, not a guess.
+  `payday` is a separate, required column on the same table — it's not derived from the
+  week range (the business doesn't pay on a fixed offset after the period ends).
 - **`extraPay` is optional** everywhere (form, store type, Zod schema) — it defaults to
   `0`, is never required client- or server-side.
-- **`employee_weekly_logs.summary_total`/`employee_cut` are snapshotted at completion.**
+- **`employee_paycheck_logs.summary_total`/`employee_cut` are snapshotted at completion.**
   While `status = 'draft'` they're computed live from `employee_loads`; once `completed`,
   they're frozen so a later rate change never retroactively alters a historical record.
 - **Employee delete is a soft delete** (`employees.active = false`). Never hard-delete —
-  `employee_loads`/`employee_weekly_logs` reference employees and must keep their history.
-- **Every write to a weekly log or its loads — draft or completed — writes to `audit_log`**
+  `employee_loads`/`employee_paycheck_logs` reference employees and must keep their history.
+- **Every write to a paycheck log or its loads — draft or completed — writes to `audit_log`**
   (who/what/when). Editing a completed/printed log is allowed (it's the designated way to
   fix mistakes after the fact); the audit trail is what makes that safe. `audit_log` is for
   business record-keeping and is deliberately separate from the operational logger — don't
   conflate the two.
+- **Stores are a normalized table** (`stores`, `employee_loads.store_id`), not a free-text
+  column on `employee_loads` — that changed after the initial scaffold (see migrations
+  `0002_stores.sql`/`0003_employee_loads_store_id.sql`). The API still accepts/returns a
+  plain `storeName` string though — `backend/src/services/store-service.ts`'s
+  `resolveStoreId()` looks a name up case-insensitively or creates it, so the frontend form
+  and the legacy import script never need to deal with `store_id` directly.
+- **"Weekly log" was renamed to "paycheck log"** (`employee_weekly_logs` →
+  `employee_paycheck_logs`, `employee_loads.weekly_log_id` → `paycheck_log_id`) — it's one
+  paycheck per pay period, not strictly a calendar week. If you find a stray reference to
+  the old names (a comment, a doc, a variable), it's drift to fix, not a hint of a second
+  table.
 - **No public registration.** Admin accounts are provisioned via
   `bun run create-user --email ... --password ... [--role admin]`
   (`backend/scripts/create-user.ts`), never through the API. There's no `/api/auth/register`.
@@ -125,5 +152,7 @@ This project has no human reviewer gate beyond CI, so treat these as mandatory, 
    `.vue` type errors `tsc` alone cannot)
 3. `bun run lint` from the repo root (and `bunx prettier --write <changed files>` first —
    lint will flag Prettier-formatting drift as real findings otherwise)
+4. For a change touching a user-facing flow: `cd frontend && bun run e2e` (Playwright —
+   starts the dev server itself, nothing else needs to be running first)
 
 Don't report a task finished without having actually run these.

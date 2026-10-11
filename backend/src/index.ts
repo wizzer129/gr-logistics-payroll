@@ -11,11 +11,17 @@ import {
 	updateEmployee,
 } from './controllers/employees-controller';
 import {
-	completeWeeklyLog,
-	createWeeklyLog,
-	getWeeklyLogLoads,
-	listWeeklyLogs,
-} from './controllers/weekly-logs-controller';
+	completePaycheckLog,
+	createPaycheckLog,
+	deletePaycheckLog,
+	getPaycheckLogLoads,
+	listPaycheckLogs,
+	updatePaycheckLog,
+} from './controllers/paycheck-logs-controller';
+import {
+	getDashboardSummary,
+	getEmployeeDashboardSummary,
+} from './controllers/dashboard-controller';
 import { extractLoad } from './controllers/load-extraction-controller';
 
 assertEnv();
@@ -85,16 +91,39 @@ const server = Bun.serve({
 				handle(req, async () => deleteEmployee(await requireUser(req), req.params.id)),
 		},
 
-		'/api/weekly-logs': {
-			GET: (req) => handle(req, () => listWeeklyLogs(req)),
-			POST: (req) => handle(req, async () => createWeeklyLog(req, await requireUser(req))),
+		'/api/paycheck-logs': {
+			GET: (req) => handle(req, () => listPaycheckLogs(req)),
+			POST: (req) => handle(req, async () => createPaycheckLog(req, await requireUser(req))),
 		},
-		'/api/weekly-logs/:id/complete': {
+		'/api/paycheck-logs/:id': {
+			PUT: (req) =>
+				handle(req, async () =>
+					updatePaycheckLog(req, await requireUser(req), req.params.id),
+				),
+			DELETE: (req) =>
+				handle(req, async () => deletePaycheckLog(await requireUser(req), req.params.id)),
+		},
+		'/api/paycheck-logs/:id/complete': {
 			POST: (req) =>
-				handle(req, async () => completeWeeklyLog(await requireUser(req), req.params.id)),
+				handle(req, async () => completePaycheckLog(await requireUser(req), req.params.id)),
 		},
-		'/api/weekly-logs/:id/loads': {
-			GET: (req) => handle(req, () => getWeeklyLogLoads(req.params.id)),
+		'/api/paycheck-logs/:id/loads': {
+			GET: (req) => handle(req, () => getPaycheckLogLoads(req.params.id)),
+		},
+
+		'/api/dashboard/summary': {
+			GET: (req) =>
+				handle(req, async () => {
+					await requireUser(req);
+					return getDashboardSummary(req);
+				}),
+		},
+		'/api/dashboard/employee/:id/summary': {
+			GET: (req) =>
+				handle(req, async () => {
+					await requireUser(req);
+					return getEmployeeDashboardSummary(req, req.params.id);
+				}),
 		},
 
 		'/api/loads/extract': {

@@ -19,14 +19,23 @@
 	"dashboard": {
 		"ytdSummary": "Year-to-Date Summary",
 		"employeeSummary": "Employee Summary",
-		"selectEmployee": "Select Employee"
+		"selectEmployee": "Select Employee",
+		"ytdTotal": "YTD Paid ({year})",
+		"ytdGross": "Gross Earned ({year})",
+		"paycheckCount": "Paychecks",
+		"totalLoads": "Loads",
+		"byEmployee": "Payments by Employee",
+		"byTime": "Payments Over Time",
+		"noData": "No completed paychecks yet for this year.",
+		"selectEmployeePrompt": "Select an employee to see their summary."
 	},
 	"payment": {
 		"summaryTotal": "Summary Total",
-		"employeeCut": "Employee Cut (42%)",
+		"employeeCut": "Employee Cut ({rate}%)",
 		"totalPay": "Total Pay",
 		"weekOf": "Week Of",
 		"weekRange": "Week: {start} - {end}",
+		"payday": "Payday",
 		"storeName": "Store Name/Number",
 		"date": "Date",
 		"pay": "Payment",
@@ -34,13 +43,25 @@
 		"complete": "Complete",
 		"print": "Print",
 		"addManualLoad": "Add Load Manually",
-		"uploadScreenshot": "Upload Screenshot"
+		"uploadScreenshot": "Upload Screenshot",
+		"status": "Status",
+		"editTitle": "Edit Paycheck",
+		"confirmDelete": "Delete this paycheck log? This cannot be undone."
 	},
 	"employees": {
 		"add": "Add Employee",
 		"edit": "Edit Employee",
 		"delete": "Delete Employee",
 		"firstName": "First Name",
-		"lastName": "Last Name"
+		"lastName": "Last Name",
+		"payRatePercent": "Pay Rate %"
+	},
+	"common": {
+		"edit": "Edit",
+		"delete": "Delete",
+		"save": "Save",
+		"cancel": "Cancel",
+		"actions": "Actions",
+		"allEmployees": "All Employees"
 	}
 }

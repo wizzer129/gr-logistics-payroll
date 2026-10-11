@@ -12,20 +12,13 @@ function detectLocale(): 'en' | 'es' {
 	return navigator.language.startsWith('es') ? 'es' : 'en';
 }
 
-const currencyFormat = { currency: { style: 'currency', currency: 'USD' } } as const;
-
 const messages: Record<string, typeof en> = { en, es };
-const numberFormats: Record<string, typeof currencyFormat> = {
-	en: currencyFormat,
-	es: currencyFormat,
-};
 
 export const i18n = createI18n({
 	legacy: false,
 	locale: detectLocale(),
 	fallbackLocale: 'en',
 	messages,
-	numberFormats,
 });
 
 export function localeRef(): WritableComputedRef<string> {

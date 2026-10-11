@@ -1,16 +1,32 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { usePaymentProcessingStore, type Load } from '../store/payment-processing-store';
 import { parseLocalDate } from '../utils/week';
+import { useEmployees, type EmployeeOption } from '../composables/useEmployees';
 import LoadForm from '../components/payment-processing/LoadForm.vue';
 import LoadList from '../components/payment-processing/LoadList.vue';
 import PaymentSummary from '../components/payment-processing/PaymentSummary.vue';
 
 const { t, locale } = useI18n();
 const store = usePaymentProcessingStore();
+const { employees, loadEmployees } = useEmployees();
 
-const employees = ref<{ id: string; firstName: string; lastName: string }[]>([]);
+function employeeDisplayName(employee: EmployeeOption): string {
+	return `${employee.firstName} ${employee.lastName}`;
+}
+
+onMounted(loadEmployees);
+
+// Keep the store's rate in sync with whichever employee is selected — each can be cut at a
+// different percentage (see employees.pay_rate_percent).
+watch(
+	() => store.employeeId,
+	(id) => {
+		const employee = employees.value.find((e) => e.id === id);
+		if (employee) store.payRatePercent = employee.payRatePercent;
+	},
+);
 
 const weekRangeLabel = computed(() => {
 	const formatter = new Intl.DateTimeFormat(locale.value, { month: 'short', day: 'numeric' });
@@ -61,22 +77,32 @@ function onPrint(): void {
 <template>
 	<v-container>
 		<v-row>
-			<v-col cols="12" md="6">
+			<v-col cols="12" sm="6" md="4" lg="2">
 				<v-select
 					v-model="store.employeeId"
 					:items="employees"
-					item-title="lastName"
+					:item-title="employeeDisplayName"
 					item-value="id"
 					:label="t('dashboard.selectEmployee')"
+					variant="solo-filled"
 				/>
 			</v-col>
-			<v-col cols="12" md="6">
+			<v-col cols="12" sm="6" md="4" lg="2">
 				<v-text-field
 					v-model="store.selectedDate"
 					:label="t('payment.weekOf')"
 					type="date"
+					variant="solo-filled"
 				/>
 				<div class="text-caption text-medium-emphasis mt-n4 mb-2">{{ weekRangeLabel }}</div>
+			</v-col>
+			<v-col cols="12" sm="6" md="4" lg="2">
+				<v-text-field
+					v-model="store.payday"
+					:label="t('payment.payday')"
+					type="date"
+					variant="solo-filled"
+				/>
 			</v-col>
 		</v-row>
 
@@ -91,6 +117,7 @@ function onPrint(): void {
 					:summary-total="store.summaryTotal"
 					:employee-cut="store.cut.employeeCut"
 					:rounded-pay="store.cut.roundedPay"
+					:pay-rate-percent="store.payRatePercent"
 					:completed="store.completed"
 					@complete="onComplete"
 					@print="onPrint"

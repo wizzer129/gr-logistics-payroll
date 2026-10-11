@@ -19,7 +19,7 @@ A web portal for an owner-operator trucking business to track and document payme
 | Frontend hosting   | Cloudflare (Pages)                                                                                       |
 | CI/CD              | GitHub Actions                                                                                           |
 | Unit testing       | `bun test` (backend) · Vitest (frontend — needs Vite's `.vue` transform + DOM env)                       |
-| E2E testing        | Cypress                                                                                                  |
+| E2E testing        | Playwright                                                                                               |
 | Request validation | Zod (backend)                                                                                            |
 | Logging            | hand-rolled leveled logger (see §9)                                                                      |
 | Lint/Format        | ESLint + Prettier (tabs, tab width 4, semicolons, single quotes)                                         |
@@ -112,21 +112,21 @@ frontend/
     - **Employee cut** — 42% of summary total.
     - **Total pay for employee** — the 42% cut, rounded per the rule below.
 - **Rounding rule:** standard round-half-up to the nearest whole dollar — `.50` and above rounds up, `.49` and below rounds down (e.g. `$120.50 → $121`, `$120.49 → $120`).
-- Each load is submitted as part of an array to the backend; each load becomes its own row in `driver_loads`.
-- The whole submission is tied to one `driver_weekly_log` record (one row per employee per week), which all its loads reference.
-- "Complete" button finalizes the weekly log (locks it against the live-editing flow, distinct from the later admin [Edit Payment](#edit-payment) view).
+- Each load is submitted as part of an array to the backend; each load becomes its own row in `employee_loads`.
+- The whole submission is tied to one `employee_paycheck_logs` record (one row per employee per pay period), which all its loads reference. Also carries the `payday` date, separate from `week_start`/`week_end` — the business doesn't pay on a fixed offset after the period ends, so it's entered directly rather than derived.
+- "Complete" button finalizes the paycheck log (locks it against the live-editing flow, distinct from the later admin [Edit Payment](#edit-payment) view).
 - After completion, a "Print" button appears. Print layout fits the same table **twice** on one printed page, stacked.
 
 #### Edit Payment
 
-- Lookup `driver_weekly_log` records by employee name and date (range).
-- Edit a located weekly log (and its child loads).
-- Any edit to a weekly log or its loads — draft or completed — writes an entry to `audit_log` (who, what changed, old/new values, when). Editing a completed/printed log is still allowed (this is the designated way to fix mistakes after the fact), but the audit trail makes every change traceable.
+- Lookup `employee_paycheck_logs` records by employee name and date (range).
+- Edit a located paycheck log (and its child loads).
+- Any edit to a paycheck log or its loads — draft or completed — writes an entry to `audit_log` (who, what changed, old/new values, when). Editing a completed/printed log is still allowed (this is the designated way to fix mistakes after the fact), but the audit trail makes every change traceable.
 
 #### Edit Employees
 
 - Add / edit / delete employees.
-- Delete is a **soft delete**: sets `employees.active = false` rather than removing the row, so existing `employee_loads`/`employee_weekly_logs` history stays intact. Inactive employees drop out of the "select employee" dropdowns but remain visible/searchable in Edit Payment lookups and dashboard history.
+- Delete is a **soft delete**: sets `employees.active = false` rather than removing the row, so existing `employee_loads`/`employee_paycheck_logs` history stays intact. Inactive employees drop out of the "select employee" dropdowns but remain visible/searchable in Edit Payment lookups and dashboard history.
 
 ---
 
@@ -150,13 +150,13 @@ POST   /api/employees
 PUT    /api/employees/:id
 DELETE /api/employees/:id
 
-GET    /api/weekly-logs?employeeId=&from=&to=
-POST   /api/weekly-logs
-PUT    /api/weekly-logs/:id
-DELETE /api/weekly-logs/:id
+GET    /api/paycheck-logs?employeeId=&from=&to=
+POST   /api/paycheck-logs
+PUT    /api/paycheck-logs/:id
+DELETE /api/paycheck-logs/:id
 
-GET    /api/weekly-logs/:id/loads
-POST   /api/weekly-logs/:id/loads     (bulk array insert)
+GET    /api/paycheck-logs/:id/loads
+POST   /api/paycheck-logs/:id/loads     (bulk array insert)
 PUT    /api/loads/:id
 DELETE /api/loads/:id
 
@@ -215,49 +215,62 @@ Corrected/expanded from spec (naming cleaned up: `empoloyee_loads` → `employee
 | last_edited_by          | FK → users.id        |                                  |
 | created_at / updated_at | timestamptz          |                                  |
 
-**`employee_weekly_logs`**
+**`employee_paycheck_logs`** _(renamed from `employee_weekly_logs` — it's one paycheck per pay period, not strictly a calendar week)_
 
-| column                  | type              | notes                                                                                  |
-| ----------------------- | ----------------- | -------------------------------------------------------------------------------------- |
-| id                      | serial/uuid PK    |                                                                                        |
-| employee_id             | FK → employees.id |                                                                                        |
-| week_start              | date              | Sunday of the pay week — split "date range" into two columns for easy querying/sorting |
-| week_end                | date              | Saturday of the pay week                                                               |
-| status                  | text              | `draft` / `completed` — needed for the Complete→Print flow                             |
-| summary_total           | numeric(10,2)     | snapshot at completion, or compute on read — see open question                         |
-| employee_cut            | numeric(10,2)     |                                                                                        |
-| created_by              | FK → users.id     |                                                                                        |
-| last_edited_by          | FK → users.id     |                                                                                        |
-| created_at / updated_at | timestamptz       |                                                                                        |
+| column                  | type              | notes                                                                                                                  |
+| ----------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| id                      | serial/uuid PK    |                                                                                                                        |
+| employee_id             | FK → employees.id |                                                                                                                        |
+| week_start              | date              | Sunday of the pay week — split "date range" into two columns for easy querying/sorting                                 |
+| week_end                | date              | Saturday of the pay week                                                                                               |
+| payday                  | date              | the actual date paid — not derived from week_end, entered directly (the lag between period-end and payday isn't fixed) |
+| status                  | text              | `draft` / `completed` — needed for the Complete→Print flow                                                             |
+| summary_total           | numeric(10,2)     | snapshot at completion, computed live from `employee_loads` while draft                                                |
+| employee_cut            | numeric(10,2)     |                                                                                                                        |
+| created_by              | FK → users.id     |                                                                                                                        |
+| last_edited_by          | FK → users.id     |                                                                                                                        |
+| created_at / updated_at | timestamptz       |                                                                                                                        |
+
+**`stores`** _(added after the initial scaffold — normalizes what was a free-text `store_name` column)_
+
+| column                  | type           | notes                                     |
+| ----------------------- | -------------- | ----------------------------------------- |
+| id                      | serial/uuid PK |                                           |
+| name                    | text unique    | case-insensitive lookup via `lower(name)` |
+| created_by              | FK → users.id  |                                           |
+| last_edited_by          | FK → users.id  |                                           |
+| created_at / updated_at | timestamptz    |                                           |
 
 **`employee_loads`**
 
-| column                  | type                         | notes                                                                                        |
-| ----------------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
-| id                      | serial/uuid PK               | **added — spec gave no PK for this table**                                                   |
-| employee_id             | FK → employees.id            |                                                                                              |
-| weekly_log_id           | FK → employee_weekly_logs.id |                                                                                              |
-| store_name              | text                         | _(spec's UI lists "Store Name/Number" as a field but it was missing from the model — added)_ |
-| load_date               | date                         | (spec said `date`, renamed to avoid reserved-word friction)                                  |
-| pay                     | numeric(10,2)                |                                                                                              |
-| extra_pay               | numeric(10,2) default 0      |                                                                                              |
-| created_by              | FK → users.id                |                                                                                              |
-| last_edited_by          | FK → users.id                |                                                                                              |
-| created_at / updated_at | timestamptz                  |                                                                                              |
+| column                  | type                           | notes                                                                   |
+| ----------------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| id                      | serial/uuid PK                 | **added — spec gave no PK for this table**                              |
+| employee_id             | FK → employees.id              |                                                                         |
+| paycheck_log_id         | FK → employee_paycheck_logs.id | renamed from `weekly_log_id`                                            |
+| store_id                | FK → stores.id                 | renamed from `store_name` (free text) once the `stores` table was added |
+| load_date               | date                           | (spec said `date`, renamed to avoid reserved-word friction)             |
+| pay                     | numeric(10,2)                  |                                                                         |
+| extra_pay               | numeric(10,2) default 0        |                                                                         |
+| created_by              | FK → users.id                  |                                                                         |
+| last_edited_by          | FK → users.id                  |                                                                         |
+| created_at / updated_at | timestamptz                    |                                                                         |
 
-> Note: `load_name` appeared in the spec's model list but isn't mentioned in the Payment Processing UI fields (Date, Store Name/Number, Payment, Extra Pay). Dropped in favor of `store_name`; flag if `load_name` was meant to be separate from store name.
+> Note: `load_name` appeared in the spec's model list but isn't mentioned in the Payment Processing UI fields (Date, Store Name/Number, Payment, Extra Pay). Dropped in favor of `store_name`/`store_id`; flag if `load_name` was meant to be separate from store name.
+>
+> The API layer still accepts/returns a plain `storeName` string — `resolveStoreId()` in the backend looks it up case-insensitively or creates it, so the frontend form and the legacy import script never deal with `store_id` directly.
 
 **`audit_log`**
 
-| column     | type                                 | notes                                                   |
-| ---------- | ------------------------------------ | ------------------------------------------------------- |
-| id         | serial/uuid PK                       |                                                         |
-| entity     | text                                 | e.g. `employee_weekly_log`, `employee_load`, `employee` |
-| entity_id  | FK (polymorphic, no hard constraint) |                                                         |
-| action     | text                                 | `create` / `update` / `delete`                          |
-| changed_by | FK → users.id                        |                                                         |
-| diff       | jsonb                                | old/new field values                                    |
-| created_at | timestamptz                          |                                                         |
+| column     | type                                 | notes                                                     |
+| ---------- | ------------------------------------ | --------------------------------------------------------- |
+| id         | serial/uuid PK                       |                                                           |
+| entity     | text                                 | e.g. `employee_paycheck_log`, `employee_load`, `employee` |
+| entity_id  | FK (polymorphic, no hard constraint) |                                                           |
+| action     | text                                 | `create` / `update` / `delete`                            |
+| changed_by | FK → users.id                        |                                                           |
+| diff       | jsonb                                | old/new field values                                      |
+| created_at | timestamptz                          |                                                           |
 
 ---
 
@@ -279,7 +292,7 @@ Standard round-half-up to the nearest whole dollar: `.50` and above rounds up, `
 
 - **Unit — frontend (Vitest):** Pinia stores, utils (esp. the 42%-cut + rounding calculation — pure function, thorough edge-case coverage: $0, exact `.50`, negative/invalid input guards), components.
 - **Unit — backend (`bun test`):** controllers/services, Zod schemas, the shared rounding/cut-calculation util (mirrored test cases to the frontend one, since both sides may independently compute/display it).
-- **E2E (Cypress):** login flow, full payment-processing flow (select employee → add loads → complete → print), employee CRUD, weekly-log lookup/edit.
+- **E2E (Playwright):** login flow, full payment-processing flow (select employee → add loads → complete → print), employee CRUD, weekly-log lookup/edit.
 - CI (GitHub Actions): lint → `bun test` (backend) + `vitest run` (frontend) → e2e (headless) → build → deploy on merge to main.
 
 ---
@@ -307,7 +320,7 @@ Standard round-half-up to the nearest whole dollar: `.50` and above rounds up, `
 - Backend: add role-check middleware now (even though only `admin` exists today), so every route declares its required role explicitly (e.g. `requireRole('admin')`) rather than assuming "any logged-in user is an admin." This avoids an authorization gap when the `employee` role is introduced later.
 - Frontend: route guards (`vue-router` `beforeEnter`/meta fields) should already branch on role, even if today every route just requires `admin`. Keeps the future employee-portal views (e.g. "my weekly logs" read-only view) additive rather than a retrofit.
 - `employees` table rows are **data about a driver**, not login accounts. When the employee portal ships, an `employees` row will need to link to a `users` row (e.g. `employees.user_id` nullable FK) for the employee who's also a login-capable user — not needed yet, but worth keeping in mind so the eventual migration is additive.
-- `employee_weekly_logs.summary_total`/`employee_cut` are **snapshotted at completion** (confirmed) — computed/stored once when status flips to `completed`, so later rate changes never retroactively alter historical records. While status is `draft`, these are computed live from `employee_loads` on read, not stored.
+- `employee_paycheck_logs.summary_total`/`employee_cut` are **snapshotted at completion** (confirmed) — computed/stored once when status flips to `completed`, so later rate changes never retroactively alter historical records. While status is `draft`, these are computed live from `employee_loads` on read, not stored.
 
 ---
 
@@ -315,6 +328,6 @@ Standard round-half-up to the nearest whole dollar: `.50` and above rounds up, `
 
 - Add `GET` (list/detail) endpoints — the spec's controllers list Add/Edit/Delete only, but the UI needs reads too (dashboard, dropdowns, lookups).
 - With raw SQL via `Bun.sql`, always use its tagged-template parameterization (`sql\`... WHERE id = ${id}\``) — never string-concatenate values into queries. This is the one place hand-rolled SQL needs discipline in place of an ORM's guardrails, given this handles financial data.
-- Enforce one `employee_weekly_logs` row per `(employee_id, week_start)` via a unique constraint, to prevent accidental duplicate weekly submissions.
+- Enforce one `employee_paycheck_logs` row per `(employee_id, week_start)` via a unique constraint, to prevent accidental duplicate weekly submissions.
 - Validate `pay`/`extra_pay` as non-negative numerics server-side, not just in the UI.
 - `created_at`/`updated_at` on every table (already reflected in the schema above), plus the `audit_log` table for completed-record changes.

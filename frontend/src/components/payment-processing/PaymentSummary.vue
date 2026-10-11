@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import { formatCurrency } from '../../utils/currency';
 
-const { t, n } = useI18n();
+const { t } = useI18n();
 
 const props = defineProps<{
 	summaryTotal: number;
 	employeeCut: number;
 	roundedPay: number;
+	payRatePercent: number;
 	completed: boolean;
 }>();
 
@@ -18,15 +20,15 @@ const emit = defineEmits<{ complete: []; print: [] }>();
 		<v-card-text>
 			<div class="d-flex justify-space-between">
 				<span>{{ t('payment.summaryTotal') }}</span
-				><strong>{{ n(props.summaryTotal, 'currency') }}</strong>
+				><strong>{{ formatCurrency(props.summaryTotal) }}</strong>
 			</div>
 			<div class="d-flex justify-space-between">
-				<span>{{ t('payment.employeeCut') }}</span
-				><strong>{{ n(props.employeeCut, 'currency') }}</strong>
+				<span>{{ t('payment.employeeCut', { rate: props.payRatePercent }) }}</span
+				><strong>{{ formatCurrency(props.employeeCut) }}</strong>
 			</div>
 			<div class="d-flex justify-space-between">
 				<span>{{ t('payment.totalPay') }}</span
-				><strong>{{ n(props.roundedPay, 'currency') }}</strong>
+				><strong>{{ formatCurrency(props.roundedPay) }}</strong>
 			</div>
 		</v-card-text>
 		<v-card-actions>

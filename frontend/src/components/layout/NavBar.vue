@@ -54,7 +54,9 @@ async function onLogout(): Promise<void> {
 			:model-value="locale"
 			:items="localeItems"
 			density="compact"
-			style="max-width: 100px"
+			class="mt-5"
+			style="max-width: 60px"
+			variant="plain"
 			@update:model-value="onLocaleChange"
 		/>
 		<v-btn

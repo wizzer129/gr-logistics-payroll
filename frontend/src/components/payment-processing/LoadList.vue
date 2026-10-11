@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import type { Load } from '../../store/payment-processing-store';
+import { formatCurrency } from '../../utils/currency';
 
-const { t, n } = useI18n();
+const { t } = useI18n();
 defineProps<{ loads: Load[] }>();
 const emit = defineEmits<{ remove: [index: number] }>();
 </script>
@@ -20,10 +21,12 @@ const emit = defineEmits<{ remove: [index: number] }>();
 		</thead>
 		<tbody>
 			<tr v-for="(load, index) in loads" :key="index">
-				<td class="text-start">{{ load.loadDate }}</td>
+				<!-- loadDate is "YYYY-MM-DD" from a date input when added locally, but a full
+				ISO datetime when it comes back from the API (edit flow) — truncate either way. -->
+				<td class="text-start">{{ load.loadDate.slice(0, 10) }}</td>
 				<td class="text-start">{{ load.storeName }}</td>
-				<td class="text-start">{{ n(load.pay, 'currency') }}</td>
-				<td class="text-start">{{ n(load.extraPay ?? 0, 'currency') }}</td>
+				<td class="text-start">{{ formatCurrency(load.pay) }}</td>
+				<td class="text-start">{{ formatCurrency(load.extraPay ?? 0) }}</td>
 				<td class="text-start">
 					<v-btn
 						icon="mdi-delete"

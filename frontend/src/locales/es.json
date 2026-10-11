@@ -19,14 +19,23 @@
 	"dashboard": {
 		"ytdSummary": "Resumen del Año",
 		"employeeSummary": "Resumen del Empleado",
-		"selectEmployee": "Seleccionar Empleado"
+		"selectEmployee": "Seleccionar Empleado",
+		"ytdTotal": "Pagado Este Año ({year})",
+		"ytdGross": "Ingreso Bruto ({year})",
+		"paycheckCount": "Cheques",
+		"totalLoads": "Cargas",
+		"byEmployee": "Pagos por Empleado",
+		"byTime": "Pagos a lo Largo del Tiempo",
+		"noData": "Aún no hay cheques completados para este año.",
+		"selectEmployeePrompt": "Seleccione un empleado para ver su resumen."
 	},
 	"payment": {
 		"summaryTotal": "Total General",
-		"employeeCut": "Parte del Empleado (42%)",
+		"employeeCut": "Parte del Empleado ({rate}%)",
 		"totalPay": "Pago Total",
 		"weekOf": "Semana Del",
 		"weekRange": "Semana: {start} - {end}",
+		"payday": "Día de Pago",
 		"storeName": "Nombre/Número de Tienda",
 		"date": "Fecha",
 		"pay": "Pago",
@@ -34,13 +43,25 @@
 		"complete": "Completar",
 		"print": "Imprimir",
 		"addManualLoad": "Agregar Carga Manualmente",
-		"uploadScreenshot": "Subir Captura de Pantalla"
+		"uploadScreenshot": "Subir Captura de Pantalla",
+		"status": "Estado",
+		"editTitle": "Editar Pago",
+		"confirmDelete": "¿Eliminar este registro de pago? Esta acción no se puede deshacer."
 	},
 	"employees": {
 		"add": "Agregar Empleado",
 		"edit": "Editar Empleado",
 		"delete": "Eliminar Empleado",
 		"firstName": "Nombre",
-		"lastName": "Apellido"
+		"lastName": "Apellido",
+		"payRatePercent": "Porcentaje de Pago %"
+	},
+	"common": {
+		"edit": "Editar",
+		"delete": "Eliminar",
+		"save": "Guardar",
+		"cancel": "Cancelar",
+		"actions": "Acciones",
+		"allEmployees": "Todos los Empleados"
 	}
 }

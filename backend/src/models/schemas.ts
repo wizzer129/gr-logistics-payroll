@@ -11,6 +11,7 @@ export const employeeSchema = z.object({
 	dob: z.string().date().optional(),
 	email: z.string().email().optional(),
 	address: z.string().optional(),
+	payRatePercent: z.number().positive().max(100).optional(),
 });
 
 export const loadSchema = z.object({
@@ -21,9 +22,14 @@ export const loadSchema = z.object({
 	extraPay: z.number().nonnegative().optional().default(0),
 });
 
-export const weeklyLogSchema = z.object({
+export const paycheckLogSchema = z.object({
 	employeeId: z.string().uuid(),
 	weekStart: z.string().date(),
 	weekEnd: z.string().date(),
+	payday: z.string().date(),
 	loads: z.array(loadSchema).min(1),
 });
+
+// Editing a log replaces its week range, payday, and full set of loads — the employee it
+// belongs to is immutable, so it's omitted here rather than taken from the request body.
+export const paycheckLogUpdateSchema = paycheckLogSchema.omit({ employeeId: true });
