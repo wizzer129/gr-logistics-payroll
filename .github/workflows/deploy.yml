@@ -31,6 +31,9 @@ jobs:
         permissions:
             contents: read
             packages: write
+            # The type=gha cache backend below needs this to read/write the Actions cache —
+            # without it, buildx fails with "failed to solve: ... build-cache-backends".
+            actions: write
         steps:
             - uses: actions/checkout@v4
 
