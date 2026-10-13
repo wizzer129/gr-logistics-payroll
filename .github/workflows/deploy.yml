@@ -53,10 +53,13 @@ jobs:
                       type=sha
                       type=raw,value=latest
 
+            # Rust backend since the Phase 7 cutover (RUST_MIGRATION.md). Rollback: redeploy a
+            # pre-cutover `sha-…` tag of this image — those are the Bun builds, and the
+            # schema (through 0007) and session format work with both.
             - name: Build and push backend image
               uses: docker/build-push-action@v5
               with:
-                  context: ./backend
+                  context: ./backend-rs
                   push: true
                   tags: ${{ steps.meta.outputs.tags }}
                   labels: ${{ steps.meta.outputs.labels }}

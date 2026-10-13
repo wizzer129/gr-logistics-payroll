@@ -1,0 +1,5 @@
+# Honored by rustup (CI, Docker). Local Arch installs use the system toolchain — keep it at
+# or above this version.
+[toolchain]
+channel = "1.99"
+components = ["rustfmt", "clippy"]

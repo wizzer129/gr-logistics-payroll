@@ -9,11 +9,15 @@
 	"scripts": {
 		"dev": "concurrently -n api,web -c cyan.bold,magenta.bold --kill-others-on-fail \"bun run dev:backend\" \"bun run dev:frontend\"",
 		"dev:frontend": "bun run --cwd frontend dev",
-		"dev:backend": "bun run --cwd backend dev",
+		"dev:backend": "cd backend-rs && cargo run",
+		"dev:backend-bun": "bun run --cwd backend dev",
 		"lint": "eslint .",
 		"format": "prettier --write .",
 		"test:frontend": "bun run --cwd frontend test",
-		"test:backend": "bun run --cwd backend test"
+		"test:backend": "cd backend-rs && set -a && . ./.env.development && set +a && cargo test",
+		"test:backend-bun": "bun run --cwd backend test",
+		"migrate": "cd backend-rs && cargo run -- migrate",
+		"create-user": "cd backend-rs && cargo run -- create-user"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.0.0",

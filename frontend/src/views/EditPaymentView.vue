@@ -18,6 +18,8 @@ type PaycheckLogRow = {
 	status: string;
 	summaryTotal: number;
 	employeeCut: number;
+	// The rate this log's cut was computed at; edits recompute at it (Rust backend only).
+	payRatePercent?: number | null;
 	firstName: string;
 	lastName: string;
 };
@@ -66,10 +68,7 @@ const editSummaryTotal = ref(0);
 const editCut = ref(calculateEmployeeCut(0));
 
 function recalcEdit(): void {
-	editSummaryTotal.value = editLoads.value.reduce(
-		(sum, l) => sum + l.pay + (l.extraPay ?? 0),
-		0,
-	);
+	editSummaryTotal.value = editLoads.value.reduce((sum, l) => sum + l.pay + (l.extraPay ?? 0), 0);
 	editCut.value = calculateEmployeeCut(editSummaryTotal.value, editRatePercent.value);
 }
 
@@ -83,6 +82,7 @@ async function openEdit(log: PaycheckLogRow): Promise<void> {
 	editForm.weekEnd = log.weekEnd.slice(0, 10);
 	editForm.payday = log.payday.slice(0, 10);
 	editRatePercent.value =
+		log.payRatePercent ??
 		employees.value.find((e) => e.id === log.employeeId)?.payRatePercent ??
 		DEFAULT_PAY_RATE_PERCENT;
 
@@ -250,7 +250,10 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 
 					<v-row>
 						<v-col cols="12" md="6">
-							<LoadForm @add-load="onEditAddLoad" @extract-requested="onEditExtractRequested" />
+							<LoadForm
+								@add-load="onEditAddLoad"
+								@extract-requested="onEditExtractRequested"
+							/>
 						</v-col>
 						<v-col cols="12" md="6">
 							<LoadList :loads="editLoads" @remove="onEditRemoveLoad" />
@@ -262,7 +265,9 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 										><strong>{{ formatCurrency(editSummaryTotal) }}</strong>
 									</div>
 									<div class="d-flex justify-space-between">
-										<span>{{ t('payment.employeeCut', { rate: editRatePercent }) }}</span
+										<span>{{
+											t('payment.employeeCut', { rate: editRatePercent })
+										}}</span
 										><strong>{{ formatCurrency(editCut.employeeCut) }}</strong>
 									</div>
 									<div class="d-flex justify-space-between">

@@ -5,7 +5,9 @@ import { createLogger } from '../src/utils/logger';
 
 const logger = createLogger('migrate');
 
-const migrationsDir = join(import.meta.dir, '../src/db/migrations');
+// The Rust backend owns the schema now (RUST_MIGRATION.md, Phase 1) — this script reads the
+// same files so local dev keeps working until cutover. Add new migrations there, not here.
+const migrationsDir = join(import.meta.dir, '../../backend-rs/migrations');
 
 async function run(): Promise<void> {
 	await sql`

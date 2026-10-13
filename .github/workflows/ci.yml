@@ -53,6 +53,42 @@ jobs:
             - run: bun test
               working-directory: backend
 
+    # The Rust backend (backend-rs/). Runs alongside the Bun `backend-test` job until cutover.
+    backend-rs:
+        runs-on: ubuntu-latest
+        services:
+            postgres:
+                image: postgres:16-alpine
+                env:
+                    POSTGRES_USER: gr_logistics
+                    POSTGRES_PASSWORD: ci_password
+                    POSTGRES_DB: gr_logistics
+                ports: ['5432:5432']
+                options: >-
+                    --health-cmd "pg_isready -U gr_logistics"
+                    --health-interval 5s
+                    --health-timeout 5s
+                    --health-retries 10
+        env:
+            # #[sqlx::test] creates a throwaway database per test on this server.
+            DATABASE_URL: postgres://gr_logistics:ci_password@localhost:5432/gr_logistics
+        defaults:
+            run:
+                working-directory: backend-rs
+        steps:
+            - uses: actions/checkout@v4
+            # Version comes from backend-rs/rust-toolchain.toml.
+            - uses: dtolnay/rust-toolchain@master
+              with:
+                  toolchain: '1.99'
+                  components: rustfmt, clippy
+            - uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: backend-rs
+            - run: cargo fmt --check
+            - run: cargo clippy --all-targets --locked -- -D warnings
+            - run: cargo test --locked
+
     frontend-test:
         runs-on: ubuntu-latest
         steps:

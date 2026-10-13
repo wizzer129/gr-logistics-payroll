@@ -19,7 +19,8 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
       (not Bun's `--filter --parallel`) specifically because `concurrently` supports custom
       per-process labels and colors (`-n`, `-c`) that Bun's native runner doesn't. That's an
       intentional, considered exception — not a regression to "fix" back to Bun natives.
-- **No ORM.** Schema lives as plain SQL in `backend/src/db/migrations/`. Always use
+- **No ORM.** Schema lives as plain SQL in `backend-rs/migrations/` (moved there for the
+  Rust port — see `RUST_MIGRATION.md`; the Bun `migrate` script reads the same files). Always use
   `Bun.sql`'s tagged-template parameterization (`` sql`... WHERE id = ${id}` ``) — never
   string-concatenate a query. This is the one place hand-rolled SQL needs the discipline
   an ORM would otherwise enforce, given the data is financial.

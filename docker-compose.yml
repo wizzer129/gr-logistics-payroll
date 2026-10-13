@@ -15,10 +15,24 @@ services:
             timeout: 5s
             retries: 10
 
-    backend:
-        build: ./backend
+    # One-shot: applies pending migrations, then exits. The backend waits for it to succeed.
+    migrate:
+        build: ./backend-rs
+        image: gr-logistics-backend-rs:dev
+        command: ['migrate']
         env_file:
-            - ./backend/.env.development
+            - ./backend-rs/.env.development
+        environment:
+            DATABASE_URL: postgres://gr_logistics:dev_password@db:5432/gr_logistics
+        depends_on:
+            db:
+                condition: service_healthy
+
+    backend:
+        build: ./backend-rs
+        image: gr-logistics-backend-rs:dev
+        env_file:
+            - ./backend-rs/.env.development
         environment:
             DATABASE_URL: postgres://gr_logistics:dev_password@db:5432/gr_logistics
         ports:
@@ -26,6 +40,9 @@ services:
         depends_on:
             db:
                 condition: service_healthy
+            migrate:
+                condition: service_completed_successfully
+        # Uses the image's HEALTHCHECK (`gr-logistics healthcheck`).
 
 volumes:
     gr_logistics_db:
