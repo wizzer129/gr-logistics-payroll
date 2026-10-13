@@ -18,8 +18,8 @@ type PaycheckLogRow = {
 	status: string;
 	summaryTotal: number;
 	employeeCut: number;
-	// The rate this log's cut was computed at; edits recompute at it (Rust backend only).
-	payRatePercent?: number | null;
+	// The rate this log's cut was computed at; the backend recomputes edits at it too.
+	payRatePercent: number;
 	firstName: string;
 	lastName: string;
 };
@@ -76,15 +76,13 @@ watch(editLoads, recalcEdit, { deep: true });
 
 async function openEdit(log: PaycheckLogRow): Promise<void> {
 	editingLog.value = log;
-	// API dates can come back as plain "YYYY-MM-DD" or full ISO datetimes — <input type="date">
-	// rejects anything with a time component, so always truncate to the date-only prefix.
+	// The API sends "YYYY-MM-DD"; <input type="date"> rejects anything with a time component,
+	// so truncate defensively.
 	editForm.weekStart = log.weekStart.slice(0, 10);
 	editForm.weekEnd = log.weekEnd.slice(0, 10);
 	editForm.payday = log.payday.slice(0, 10);
-	editRatePercent.value =
-		log.payRatePercent ??
-		employees.value.find((e) => e.id === log.employeeId)?.payRatePercent ??
-		DEFAULT_PAY_RATE_PERCENT;
+	// Not the employee's current rate: a rate change must not re-rate an existing log.
+	editRatePercent.value = log.payRatePercent;
 
 	const response = await fetch(`/api/paycheck-logs/${log.id}/loads`, { credentials: 'include' });
 	editLoads.value = response.ok ? await response.json() : [];

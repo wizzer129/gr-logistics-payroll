@@ -10,6 +10,10 @@ A web portal for an owner-operator trucking business to track and document payme
 
 ## 2. Tech Stack
 
+> **Update (2026-10):** the backend was rewritten in Rust (axum + sqlx + rust_decimal; same
+> API, schema and business rules). The Bun-backend choices in this section and §3.1 are
+> historical — current backend conventions live in [AGENTS.md](./AGENTS.md).
+
 | Layer              | Choice                                                                                                   |
 | ------------------ | -------------------------------------------------------------------------------------------------------- |
 | Frontend           | PWA — Vite, Vue 3 (Composition API), Pinia, Vuetify, Vue Router, Vue I18n                                |

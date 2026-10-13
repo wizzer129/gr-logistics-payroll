@@ -21,8 +21,7 @@ const emit = defineEmits<{ remove: [index: number] }>();
 		</thead>
 		<tbody>
 			<tr v-for="(load, index) in loads" :key="index">
-				<!-- loadDate is "YYYY-MM-DD" from a date input when added locally, but a full
-				ISO datetime when it comes back from the API (edit flow) — truncate either way. -->
+				<!-- loadDate is "YYYY-MM-DD" from both the date input and the API; slice is defensive. -->
 				<td class="text-start">{{ load.loadDate.slice(0, 10) }}</td>
 				<td class="text-start">{{ load.storeName }}</td>
 				<td class="text-start">{{ formatCurrency(load.pay) }}</td>

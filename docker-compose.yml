@@ -17,11 +17,11 @@ services:
 
     # One-shot: applies pending migrations, then exits. The backend waits for it to succeed.
     migrate:
-        build: ./backend-rs
-        image: gr-logistics-backend-rs:dev
+        build: ./backend
+        image: gr-logistics-backend:dev
         command: ['migrate']
         env_file:
-            - ./backend-rs/.env.development
+            - ./backend/.env.development
         environment:
             DATABASE_URL: postgres://gr_logistics:dev_password@db:5432/gr_logistics
         depends_on:
@@ -29,10 +29,10 @@ services:
                 condition: service_healthy
 
     backend:
-        build: ./backend-rs
-        image: gr-logistics-backend-rs:dev
+        build: ./backend
+        image: gr-logistics-backend:dev
         env_file:
-            - ./backend-rs/.env.development
+            - ./backend/.env.development
         environment:
             DATABASE_URL: postgres://gr_logistics:dev_password@db:5432/gr_logistics
         ports:

@@ -1,40 +1,44 @@
 # AGENTS.md
 
 Context for any agent (or human) working in this repo. Full rationale lives in
-[PROJECT_PLAN.md](./PROJECT_PLAN.md); this file is the condensed "don't relitigate this"
+[PROJECT_PLAN.md](./PROJECT_PLAN.md) (its backend sections predate the Rust rewrite — this
+file wins where they disagree); this file is the condensed "don't relitigate this"
 reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
 
 ## Stack & non-negotiables
 
-- **Bun workspaces** monorepo: `frontend/` (Vite + Vue 3 + Pinia + Vuetify + Vue Router + vue-i18n)
-  and `backend/` (Bun-native REST API, no web framework). Bun pinned to `1.4.3` — see
-  `.github/workflows/*.yml` and `backend/Dockerfile`.
-- **Prefer Bun/platform natives over adding a package.** Before reaching for an npm
-  dependency, check whether Bun already does it: `Bun.serve({ routes })` (routing),
-  `Bun.sql` (Postgres — no ORM), `Bun.password` (hashing), `Bun.CookieMap` (cookies),
-  running `.ts` directly (no `tsx`/build step), `bun test` (backend unit tests), auto
-  `.env*` loading (no `dotenv`). This has been a deliberate, repeated choice throughout
-  the project — don't silently reintroduce a framework/library that duplicates one of these.
+- **Monorepo:** `frontend/` (Vite + Vue 3 + Pinia + Vuetify + Vue Router + vue-i18n, a Bun
+  workspace) and `backend/` (Rust: axum + sqlx + tokio, one crate, one binary
+  `gr-logistics` with `serve` / `migrate` / `create-user` / `healthcheck` subcommands).
+  Bun pinned to `1.4.3` (`.github/workflows/*.yml`); Rust pinned to `1.99`
+  (`backend/rust-toolchain.toml`, the CI toolchain step, `backend/Dockerfile`).
+- **Frontend tooling: prefer Bun/platform natives over adding a package.**
     - **Named exception:** the root `dev` script uses the `concurrently` package
       (not Bun's `--filter --parallel`) specifically because `concurrently` supports custom
       per-process labels and colors (`-n`, `-c`) that Bun's native runner doesn't. That's an
       intentional, considered exception — not a regression to "fix" back to Bun natives.
-- **No ORM.** Schema lives as plain SQL in `backend-rs/migrations/` (moved there for the
-  Rust port — see `RUST_MIGRATION.md`; the Bun `migrate` script reads the same files). Always use
-  `Bun.sql`'s tagged-template parameterization (`` sql`... WHERE id = ${id}` ``) — never
-  string-concatenate a query. This is the one place hand-rolled SQL needs the discipline
-  an ORM would otherwise enforce, given the data is financial.
-- **Every `numeric`/`decimal` column comes back from `Bun.sql` as a string**, not a JS
-  number (precision-safe driver behavior, no config flag to change it — confirmed against
-  the driver directly). `vue-i18n`'s `n()` throws `SyntaxError: Invalid arguments` on a
-  non-number, so any endpoint returning `pay`, `extra_pay`, `summary_total`, or
-  `employee_cut` **must** run it through `toNum()` (`backend/src/utils/sql-numeric.ts`)
-  before `Response.json(...)` — every controller that touches money already does this;
-  match the pattern in any new one rather than relying on JSON serialization to "just work."
-- **Zod** is the one validation dependency kept on the backend (money fields need real
-  validation + good error messages). **Pino was rejected** in favor of a hand-rolled
-  logger (`backend/src/utils/logger.ts`) — see "Logging" below before adding a logging
-  package.
+- **Backend: one crate per concern, already chosen.** HTTP = axum/tower/tower-http,
+  Postgres = sqlx, validation = garde, money = rust_decimal, errors = thiserror, logging =
+  tracing, Claude API = reqwest (no official Rust SDK). Don't add a second crate that
+  duplicates one of these.
+- **No ORM.** Schema lives as plain SQL in `backend/migrations/`, applied by
+  `gr-logistics migrate` (files embedded in the binary, tracked in `schema_migrations`,
+  under a Postgres advisory lock). **Never edit an applied migration** — add the next
+  numbered file. Always bind parameters (`$1`); sqlx 0.9 only accepts `'static` SQL
+  strings, which makes `format!`-built SQL a compile error — keep it that way. SQL lives in
+  `backend/src/services/`, never in handlers. The data is financial; this discipline is
+  what an ORM would otherwise enforce.
+- **Money is `rust_decimal::Decimal` end to end — never `f64`.** Every money/percent field
+  on a DTO uses `#[serde(with = "money::number")]` (`backend/src/models/money.rs`): it
+  serializes as a JSON **number** (vue-i18n's `n()` throws on strings) and parses from the
+  number's exact text — a JSON string is rejected, more than 2 decimal places is a 400.
+- **API contract** (the frontend depends on all of it): camelCase keys
+  (`#[serde(rename_all = "camelCase")]` on every DTO), dates as `"YYYY-MM-DD"`, money as
+  JSON numbers, every error as `{ "error": string }` via `AppError`
+  (`backend/src/error.rs`). Bad input is **400** — use the `ValidatedJson`, `IdPath` and
+  `ApiQuery` extractors (`backend/src/extract/`), never the plain axum ones, whose
+  rejections are 422s / plain text. 401 no session, 403 wrong role, 404, 409 duplicate,
+  413 too large, 502 when the Claude API fails.
 - **E2E is Playwright**, not Cypress (the frontend started with Cypress — see
   `PROJECT_PLAN.md`'s history if you're wondering why `cypress.config.ts` isn't there — it
   was replaced). Cypress's config loader choked on this repo's ESM setup, and Playwright's
@@ -45,51 +49,59 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
 
 ## Business rules (do not "fix" these — they're intentional)
 
-- **Employee cut is 42%** of the weekly summary total (`backend/src/utils/payment-calc.ts`,
-  mirrored in `frontend/src/utils/payment-calc.ts` — keep both in sync if this ever changes).
+- **Employee cut defaults to 42%** of the pay period's summary total, per employee via
+  `employees.pay_rate_percent` (`backend/src/domain/payment_calc.rs`, mirrored in
+  `frontend/src/utils/payment-calc.ts` — keep both in sync if this ever changes).
 - **Rounding is round-half-up to the nearest whole dollar**: `.50` and above rounds up,
   `.49` and below rounds down (`$120.50 → $121`, `$120.49 → $120`). This was explicitly
   confirmed with the project owner — don't "correct" it to banker's rounding or similar.
+  In Rust that's `RoundingStrategy::MidpointAwayFromZero`; `Decimal::round()` is banker's
+  rounding and must not be used for money.
 - **Pay weeks run Sunday–Saturday** (`frontend/src/utils/week.ts`'s `getWeekRange`,
   `employee_paycheck_logs.week_start`/`week_end`). Confirmed convention, not a guess.
   `payday` is a separate, required column on the same table — it's not derived from the
   week range (the business doesn't pay on a fixed offset after the period ends).
-- **`extraPay` is optional** everywhere (form, store type, Zod schema) — it defaults to
+- **`extraPay` is optional** everywhere (form, store type, `LoadInput`) — it defaults to
   `0`, is never required client- or server-side.
-- **`employee_paycheck_logs.summary_total`/`employee_cut` are snapshotted at completion.**
-  While `status = 'draft'` they're computed live from `employee_loads`; once `completed`,
-  they're frozen so a later rate change never retroactively alters a historical record.
+- **A paycheck log stores its own totals and the rate they were computed at**
+  (`summary_total`, `employee_cut`, `pay_rate_percent` — migrations 0007/0008). Creating a
+  log uses the employee's current rate; every edit (draft or completed) recomputes at the
+  **log's stored rate**; completing only flips `status`. A later change to an employee's
+  rate never alters an existing log. The edit dialog previews with the log's
+  `payRatePercent` for the same reason.
 - **Employee delete is a soft delete** (`employees.active = false`). Never hard-delete —
   `employee_loads`/`employee_paycheck_logs` reference employees and must keep their history.
-- **Every write to a paycheck log or its loads — draft or completed — writes to `audit_log`**
-  (who/what/when). Editing a completed/printed log is allowed (it's the designated way to
-  fix mistakes after the fact); the audit trail is what makes that safe. `audit_log` is for
-  business record-keeping and is deliberately separate from the operational logger — don't
-  conflate the two.
+- **Every write to an employee, a paycheck log or its loads — draft or completed — writes to
+  `audit_log`** (who/what/when) **in the same transaction** as the change. Editing a
+  completed/printed log is allowed (it's the designated way to fix mistakes after the fact);
+  the audit trail is what makes that safe. `audit_log` is for business record-keeping and is
+  deliberately separate from the operational logger — don't conflate the two.
 - **Stores are a normalized table** (`stores`, `employee_loads.store_id`), not a free-text
-  column on `employee_loads` — that changed after the initial scaffold (see migrations
-  `0002_stores.sql`/`0003_employee_loads_store_id.sql`). The API still accepts/returns a
-  plain `storeName` string though — `backend/src/services/store-service.ts`'s
-  `resolveStoreId()` looks a name up case-insensitively or creates it, so the frontend form
-  and the legacy import script never need to deal with `store_id` directly.
+  column on `employee_loads`. The API still accepts/returns a plain `storeName` string —
+  `backend/src/services/stores.rs`'s `resolve_store_id()` finds a store case-insensitively
+  or creates it in one statement (unique index on `lower(name)`, migration 0006), inside the
+  caller's transaction, so the frontend and the legacy import scripts
+  (`spreadsheets/import/`, local only) never deal with `store_id` directly.
 - **"Weekly log" was renamed to "paycheck log"** (`employee_weekly_logs` →
   `employee_paycheck_logs`, `employee_loads.weekly_log_id` → `paycheck_log_id`) — it's one
   paycheck per pay period, not strictly a calendar week. If you find a stray reference to
   the old names (a comment, a doc, a variable), it's drift to fix, not a hint of a second
   table.
-- **No public registration.** Admin accounts are provisioned via
-  `bun run create-user --email ... --password ... [--role admin]`
-  (`backend/scripts/create-user.ts`), never through the API. There's no `/api/auth/register`.
+- **No public registration.** Accounts are provisioned via
+  `bun run create-user --email ... --password ... [--role admin|employee]`
+  (`backend/src/cli/create_user.rs`), never through the API. There's no `/api/auth/register`.
 - **Roles are already structured for a future `employee` role**, even though only `admin`
-  exists today: backend routes call `requireRole(user, 'admin')` explicitly rather than
-  assuming any logged-in user is an admin, and frontend route `meta.roles` already exists.
-  Keep declaring the required role explicitly on anything new, so adding the `employee`
-  role later is additive, not a retrofit.
+  is used today: every data handler calls `user.require_role(&[Role::Admin])?` explicitly —
+  reads included — rather than assuming any logged-in user is an admin, and frontend route
+  `meta.roles` already exists. Keep declaring the required role explicitly on anything new,
+  so adding the `employee` role later is additive, not a retrofit.
 
 ## Auth model
 
-- Session-based via an `httpOnly` cookie (`Bun.CookieMap`, see `backend/src/services/auth-service.ts`),
-  not JWT. The cookie itself is never readable by JS — that's deliberate.
+- Session-based via an `httpOnly` cookie (`gr_session` → `sessions` table; see
+  `backend/src/auth/`), not JWT. The cookie itself is never readable by JS — that's
+  deliberate. Protected routes sit behind the `require_session` route layer **and** take the
+  `AuthUser` extractor, so a route added outside the protected router still can't skip auth.
 - `frontend/src/store/auth-store.ts` caches the **non-sensitive** user object
   (`id`/`email`/`role`, never a token) in `localStorage` so a page refresh doesn't log the
   user out, then calls `GET /api/auth/me` (`restoreSession()`, invoked from `main.ts` before
@@ -98,15 +110,14 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
 
 ## Logging
 
-- `backend/src/utils/logger.ts` exports `createLogger(scope)` — every file that logs
-  creates its own scoped logger named after itself (e.g.
-  `const logger = createLogger('auth-service');`), not a shared generic `logger` import.
-  Each scope gets a stable, deterministic color (hashed via FNV-1a into a 32-entry
-  256-color palette) so different files' output is visually distinguishable in a dev
-  console. Levels: `ERROR`/`WARN`/`INFO`/`DEBUG`, gated by `LOG_LEVEL`. Format is
-  `LOG_FORMAT=pretty|json`, defaulting to `pretty` in development and `json` in production
-  (for log collectors). When adding logging to a new file, add a new scope name — don't
-  reuse another file's scope or fall back to an unscoped logger.
+- `tracing` (`backend/src/logging.rs`). Every event is tagged with its module path
+  (`gr_logistics::services::stores`) automatically — that's the scope; don't invent one.
+  `LOG_LEVEL` (`ERROR`/`WARN`/`INFO`/`DEBUG`) applies to app code and request traces;
+  dependencies stay at `WARN`. `LOG_FORMAT=pretty|json`, defaulting to `pretty` in
+  development and `json` in production (for log collectors).
+- One INFO line per request (`request{method=… path=…}: request handled status=… latency_ms=…`,
+  path only — query strings stay out of logs). `AppError` logs 4xx at WARN and 5xx at ERROR,
+  so handlers don't log errors themselves.
 
 ## i18n & theming (frontend)
 
@@ -130,25 +141,37 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
 - Formatting is Prettier's job (tabs, width 4, semicolons, single quotes — see
   `.prettierrc`). `eslint.config.js` deliberately disables the `eslint-plugin-vue`
   stylistic rules that fight Prettier (`vue/html-indent`, `vue/max-attributes-per-line`,
-  etc.) — don't re-enable them or hand-format around what Prettier would do.
+  etc.) — don't re-enable them or hand-format around what Prettier would do. Rust is
+  `cargo fmt` + `cargo clippy -D warnings`.
 - CRUD-ish features are split into a container view + form/list-type child components
   (see `components/payment-processing/`, `components/employees/`) — props down, events up.
   Don't collapse these back into one mega-component.
-- Frontend/backend each keep their own copy of the shared rounding/cut-calculation logic
-  (`utils/payment-calc.ts` on both sides) with mirrored test cases — this is intentional
-  duplication (no shared package between the two Bun/Vite worlds exists), not drift to fix.
+- **Backend layering:** `handlers/` are thin (extract → check role → call services → DTO);
+  `services/` own all SQL, and writes take `&mut PgConnection` so the handler composes the
+  change and its audit row into one transaction; `domain/` is pure logic with unit tests;
+  `models/` are the request/response DTOs.
+- Frontend and backend each keep their own copy of the rounding/cut-calculation logic
+  (`frontend/src/utils/payment-calc.ts` — floats, live preview only;
+  `backend/src/domain/payment_calc.rs` — `Decimal`, authoritative) with mirrored test cases
+  — intentional duplication across two languages, not drift to fix.
 
 ## Env files
 
-- `backend/.env.example` is the source of truth for which keys exist; `.env.development`
-  and `.env.production` must each be a **superset** of it. `backend/scripts/check-env-parity.ts`
-  enforces this and runs in CI — if you add a new env var, add it to `.env.example` first.
+- `backend/.env.example` is the source of truth for which keys exist; it must list exactly
+  `REQUIRED_KEYS` + `OPTIONAL_KEYS` from `backend/src/config.rs`, and `.env.development` /
+  `.env.production` must each be a **superset** of it. `backend/tests/env_example.rs`
+  enforces both — if you add a new env var, add it to `config.rs` and `.env.example`
+  together. Debug builds load `backend/.env.development`; release builds read the
+  container's environment only.
 
 ## Before calling any change done
 
 This project has no human reviewer gate beyond CI, so treat these as mandatory, not optional:
 
-1. `cd backend && bunx tsc --noEmit && bun test`
+1. `cd backend && cargo fmt --check && cargo clippy --all-targets -- -D warnings`, then
+   `bun run test:backend` from the root (needs Postgres: `docker compose up -d db`; tests
+   create throwaway databases and never touch the dev data). Tests never call the real
+   Claude API — mock it with wiremock as `tests/loads.rs` does.
 2. `cd frontend && bun run build && bun run test` (build runs `vue-tsc` — it catches
    `.vue` type errors `tsc` alone cannot)
 3. `bun run lint` from the repo root (and `bunx prettier --write <changed files>` first —

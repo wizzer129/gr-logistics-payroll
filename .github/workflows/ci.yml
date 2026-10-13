@@ -33,58 +33,21 @@ jobs:
                     --health-timeout 5s
                     --health-retries 10
         env:
-            NODE_ENV: test
-            DATABASE_URL: postgres://gr_logistics:ci_password@localhost:5432/gr_logistics
-            SESSION_SECRET: ci_secret
-            SESSION_TTL_HOURS: 12
-            ANTHROPIC_API_KEY: ci_placeholder
-            LOG_LEVEL: ERROR
-        steps:
-            - uses: actions/checkout@v4
-            - uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: 1.4.3
-            - run: bun install
-              working-directory: backend
-            - run: bun run migrate
-              working-directory: backend
-            - run: bun scripts/check-env-parity.ts
-              working-directory: backend
-            - run: bun test
-              working-directory: backend
-
-    # The Rust backend (backend-rs/). Runs alongside the Bun `backend-test` job until cutover.
-    backend-rs:
-        runs-on: ubuntu-latest
-        services:
-            postgres:
-                image: postgres:16-alpine
-                env:
-                    POSTGRES_USER: gr_logistics
-                    POSTGRES_PASSWORD: ci_password
-                    POSTGRES_DB: gr_logistics
-                ports: ['5432:5432']
-                options: >-
-                    --health-cmd "pg_isready -U gr_logistics"
-                    --health-interval 5s
-                    --health-timeout 5s
-                    --health-retries 10
-        env:
             # #[sqlx::test] creates a throwaway database per test on this server.
             DATABASE_URL: postgres://gr_logistics:ci_password@localhost:5432/gr_logistics
         defaults:
             run:
-                working-directory: backend-rs
+                working-directory: backend
         steps:
             - uses: actions/checkout@v4
-            # Version comes from backend-rs/rust-toolchain.toml.
+            # Keep in sync with backend/rust-toolchain.toml.
             - uses: dtolnay/rust-toolchain@master
               with:
                   toolchain: '1.99'
                   components: rustfmt, clippy
             - uses: Swatinem/rust-cache@v2
               with:
-                  workspaces: backend-rs
+                  workspaces: backend
             - run: cargo fmt --check
             - run: cargo clippy --all-targets --locked -- -D warnings
             - run: cargo test --locked
