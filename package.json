@@ -8,20 +8,27 @@
 	"scripts": {
 		"dev": "concurrently -n api,web -c cyan.bold,magenta.bold --kill-others-on-fail \"bun run dev:backend\" \"bun run dev:frontend\"",
 		"dev:frontend": "bun run --cwd frontend dev",
-		"dev:backend": "cd backend && cargo run",
+		"dev:backend": "bunx --bun varlock run -- cargo run --manifest-path backend/Cargo.toml",
 		"lint": "eslint .",
 		"format": "prettier --write .",
 		"test:frontend": "bun run --cwd frontend test",
-		"test:backend": "cd backend && set -a && . ./.env.development && set +a && cargo test",
-		"migrate": "cd backend && cargo run -- migrate",
-		"create-user": "cd backend && cargo run -- create-user"
+		"test:backend": "bunx --bun varlock run -- cargo test --manifest-path backend/Cargo.toml",
+		"migrate": "bunx --bun varlock run -- cargo run --manifest-path backend/Cargo.toml -- migrate",
+		"create-user": "bunx --bun varlock run -- cargo run --manifest-path backend/Cargo.toml -- create-user",
+		"env:check": "bunx --bun varlock load",
+		"env:scan": "bunx --bun varlock scan"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.0.0",
+		"@varlock/proton-pass-plugin": "0.0.3",
 		"concurrently": "^10.0.6",
 		"eslint": "^9.0.0",
 		"eslint-plugin-vue": "^9.28.0",
 		"prettier": "^3.0.0",
-		"typescript-eslint": "^8.0.0"
+		"typescript-eslint": "^8.0.0",
+		"varlock": "0.7.1"
+	},
+	"varlock": {
+		"loadPath": "./backend/"
 	}
 }

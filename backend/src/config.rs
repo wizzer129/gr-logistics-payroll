@@ -26,7 +26,7 @@ pub struct Config {
     pub log_format: LogFormat,
 }
 
-/// Must be set (non-empty) or startup fails. Keep `.env.example` in sync (tests/env_example.rs).
+/// Must be set (non-empty) or startup fails. Keep `.env.schema` in sync (tests/env_schema.rs).
 pub const REQUIRED_KEYS: &[&str] = &[
     "NODE_ENV",
     "PORT",

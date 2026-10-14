@@ -11,3 +11,4 @@ playwright-report/
 .cache/
 spreadsheets/
 target/
+csv/

@@ -13,7 +13,9 @@ Needs Bun 1.4.3, Rust 1.99 (rustup reads `backend/rust-toolchain.toml`), and Doc
 ```bash
 bun install
 
-# backend/.env.development holds the dev defaults (copy backend/.env.example if it's missing)
+# Env comes from backend/.env.schema via varlock; secrets live in Proton Pass.
+pass-cli login          # once — varlock reads secrets through the pass-cli session
+bun run env:check       # validates every key resolves
 docker compose up -d db
 bun run migrate
 bun run create-user --email admin@example.com --password changeme
@@ -25,7 +27,8 @@ bun run dev:frontend    # http://localhost:5173 — hot reload
 ```
 
 To run the backend from its release Docker image instead:
-`docker compose up -d migrate backend` (applies migrations, then serves on :3000).
+`bunx --bun varlock run -- docker compose up -d migrate backend` (applies
+migrations, then serves on :3000; varlock supplies the env compose passes through).
 
 ## Testing
 

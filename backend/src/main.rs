@@ -30,10 +30,7 @@ enum Command {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Debug builds read .env.development; release builds get their env from the container.
-    #[cfg(debug_assertions)]
-    dotenvy::from_filename(".env.development").ok();
-
+    // Env comes from the process: `varlock run` locally (backend/.env.schema), the container in prod.
     let command = Cli::parse().command.unwrap_or(Command::Serve);
     if let Command::Healthcheck = command {
         return cli::healthcheck::run().await;

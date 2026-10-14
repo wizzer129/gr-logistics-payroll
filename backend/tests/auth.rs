@@ -1,4 +1,4 @@
-//! Runs against real Postgres (`#[sqlx::test]`, DATABASE_URL from .env.development).
+//! Runs against real Postgres (`#[sqlx::test]`, DATABASE_URL from `varlock run` / .env.schema).
 
 mod common;
 

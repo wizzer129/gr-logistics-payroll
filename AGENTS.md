@@ -157,12 +157,15 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
 
 ## Env files
 
-- `backend/.env.example` is the source of truth for which keys exist; it must list exactly
-  `REQUIRED_KEYS` + `OPTIONAL_KEYS` from `backend/src/config.rs`, and `.env.development` /
-  `.env.production` must each be a **superset** of it. `backend/tests/env_example.rs`
-  enforces both — if you add a new env var, add it to `config.rs` and `.env.example`
-  together. Debug builds load `backend/.env.development`; release builds read the
-  container's environment only.
+- `backend/.env.schema` ([varlock](https://varlock.dev)) is the source of truth for which keys
+  exist and their dev defaults; it must list exactly `REQUIRED_KEYS` + `OPTIONAL_KEYS` from
+  `backend/src/config.rs` (`backend/tests/env_schema.rs` enforces it). Secrets resolve from
+  Proton Pass via `protonPass(pass://...)` — never commit a real value. The root bun scripts
+  wrap backend commands in `bunx --bun varlock run --`, run from the repo root
+  (`package.json` `varlock.loadPath` points at `backend/`; run from `backend/` the plugin
+  can't resolve from `node_modules`). `--bun` because varlock needs a newer Node than the
+  default one. The binary reads only its process env; release builds get it
+  from the container.
 
 ## Before calling any change done
 

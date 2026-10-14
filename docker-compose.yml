@@ -19,10 +19,18 @@ services:
     migrate:
         build: ./backend
         image: gr-logistics-backend:dev
+        pull_policy: build
         command: ['migrate']
-        env_file:
-            - ./backend/.env.development
+        # Passed through from the host — run compose under `bunx --bun varlock run --` from the repo root (see README).
         environment:
+            NODE_ENV:
+            PORT:
+            SESSION_TTL_HOURS:
+            CORS_ORIGIN:
+            ANTHROPIC_API_KEY:
+            ANTHROPIC_BASE_URL:
+            LOG_LEVEL:
+            LOG_FORMAT:
             DATABASE_URL: postgres://gr_logistics:dev_password@db:5432/gr_logistics
         depends_on:
             db:
@@ -31,9 +39,17 @@ services:
     backend:
         build: ./backend
         image: gr-logistics-backend:dev
-        env_file:
-            - ./backend/.env.development
+        pull_policy: build
+        # Passed through from the host — run compose under `bunx --bun varlock run --` from the repo root (see README).
         environment:
+            NODE_ENV:
+            PORT:
+            SESSION_TTL_HOURS:
+            CORS_ORIGIN:
+            ANTHROPIC_API_KEY:
+            ANTHROPIC_BASE_URL:
+            LOG_LEVEL:
+            LOG_FORMAT:
             DATABASE_URL: postgres://gr_logistics:dev_password@db:5432/gr_logistics
         ports:
             - '3000:3000'

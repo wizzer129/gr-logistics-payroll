@@ -11,7 +11,6 @@ axum-extra = { version = "0.12.6", features = ["cookie"] }
 base64 = "0.23.1"
 chrono = { version = "0.4.45", default-features = false, features = ["serde", "clock", "std"] }
 clap = { version = "4.6.7", features = ["derive", "env"] }
-dotenvy = "0.15.7"
 garde = { version = "0.23.0", features = ["derive", "email"] }
 include_dir = "0.7.4"
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }

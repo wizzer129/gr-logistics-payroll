@@ -2,5 +2,6 @@ target
 .env
 .env.development
 .env.production
+.env.schema
 Dockerfile
 .dockerignore

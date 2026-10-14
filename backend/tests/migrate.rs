@@ -1,5 +1,5 @@
 //! Runs against real Postgres: `#[sqlx::test]` creates a throwaway database per test from
-//! DATABASE_URL (loaded from .env.development).
+//! DATABASE_URL (loaded via `varlock run` from .env.schema).
 
 use gr_logistics::cli::migrate::apply;
 use sqlx::PgPool;
