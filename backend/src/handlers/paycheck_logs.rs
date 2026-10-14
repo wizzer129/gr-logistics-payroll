@@ -36,12 +36,52 @@ fn not_found() -> AppError {
     AppError::NotFound("Paycheck log not found".into())
 }
 
-/// Week range sanity plus the snapshot totals for a set of loads at a given pay rate.
+const KIND_LOADS: &str = "loads";
+const KIND_LUMP_SUM: &str = "lump_sum";
+
+/// What a create/update body pays for: itemized loads, or one lump sum (exactly one).
+enum Payment<'a> {
+    Loads(&'a [LoadInput]),
+    LumpSum(Decimal),
+}
+
+impl<'a> Payment<'a> {
+    fn from_body(loads: &'a [LoadInput], lump_sum: Option<Decimal>) -> AppResult<Self> {
+        match (lump_sum, loads.is_empty()) {
+            (Some(amount), true) => Ok(Self::LumpSum(amount)),
+            (None, false) => Ok(Self::Loads(loads)),
+            (Some(_), false) => Err(AppError::BadRequest(
+                "Send either loads or lumpSum, not both".into(),
+            )),
+            (None, true) => Err(AppError::BadRequest(
+                "loads: must have at least one load (or send lumpSum)".into(),
+            )),
+        }
+    }
+
+    fn kind(&self) -> &'static str {
+        match self {
+            Self::Loads(_) => KIND_LOADS,
+            Self::LumpSum(_) => KIND_LUMP_SUM,
+        }
+    }
+
+    /// Loads to store: none for a lump sum.
+    fn loads(&self) -> &'a [LoadInput] {
+        match self {
+            Self::Loads(loads) => loads,
+            Self::LumpSum(_) => &[],
+        }
+    }
+}
+
+/// Week range sanity plus the snapshot totals. Loads are cut at `pay_rate_percent`; a lump
+/// sum is paid in full (total = cut = the amount, recorded at a 100% rate).
 fn log_fields(
     week_start: NaiveDate,
     week_end: NaiveDate,
     payday: NaiveDate,
-    loads: &[LoadInput],
+    payment: &Payment,
     pay_rate_percent: Decimal,
 ) -> AppResult<LogFields> {
     if week_end < week_start {
@@ -50,18 +90,26 @@ fn log_fields(
         ));
     }
 
-    let amounts: Vec<_> = loads.iter().map(LoadInput::amounts).collect();
-    let summary_total = sum_loads(&amounts);
-    if summary_total > MAX_TOTAL {
-        return Err(AppError::BadRequest("Total pay is too large".into()));
-    }
+    let (summary_total, employee_cut, pay_rate_percent) = match payment {
+        Payment::Loads(loads) => {
+            let amounts: Vec<_> = loads.iter().map(LoadInput::amounts).collect();
+            let summary_total = sum_loads(&amounts);
+            if summary_total > MAX_TOTAL {
+                return Err(AppError::BadRequest("Total pay is too large".into()));
+            }
+            let cut = calculate_employee_cut(summary_total, pay_rate_percent).rounded_pay;
+            (summary_total, cut, pay_rate_percent)
+        }
+        Payment::LumpSum(amount) => (*amount, *amount, Decimal::ONE_HUNDRED),
+    };
 
     Ok(LogFields {
+        kind: payment.kind(),
         week_start,
         week_end,
         payday,
         summary_total,
-        employee_cut: calculate_employee_cut(summary_total, pay_rate_percent).rounded_pay,
+        employee_cut,
         pay_rate_percent,
     })
 }
@@ -96,6 +144,7 @@ pub async fn create(
     ValidatedJson(body): ValidatedJson<CreatePaycheckLog>,
 ) -> AppResult<(StatusCode, Json<PaycheckLog>)> {
     user.require_role(&[Role::Admin])?;
+    let payment = Payment::from_body(&body.loads, body.lump_sum)?;
 
     let mut tx = state.pool.begin().await?;
 
@@ -106,25 +155,30 @@ pub async fn create(
         body.week_start,
         body.week_end,
         body.payday,
-        &body.loads,
+        &payment,
         pay_rate,
     )?;
 
-    let log = paycheck_logs::insert(&mut tx, body.employee_id, &fields, user.id)
+    let status = if body.complete { "completed" } else { "draft" };
+    let log = paycheck_logs::insert(&mut tx, body.employee_id, &fields, status, user.id)
         .await
         .map_err(|e| AppError::conflict_if_unique(e, DUPLICATE_WEEK))?;
-    paycheck_logs::replace_loads(&mut tx, log.id, body.employee_id, &body.loads, user.id).await?;
-    record_audit(
-        &mut tx,
-        audit(log.id, AuditAction::Create, &user, json!({})),
-    )
-    .await?;
+    paycheck_logs::replace_loads(&mut tx, log.id, body.employee_id, payment.loads(), user.id)
+        .await?;
+    // A draft's create diff stays `{}`; created-as-completed records the status, like
+    // `complete` does.
+    let diff = if body.complete {
+        json!({ "status": "completed" })
+    } else {
+        json!({})
+    };
+    record_audit(&mut tx, audit(log.id, AuditAction::Create, &user, diff)).await?;
 
     tx.commit().await?;
     Ok((StatusCode::CREATED, Json(log)))
 }
 
-/// Recomputes the totals from the new loads at the rate stored on the log, not the
+/// Recomputes the totals from the new loads (or lump sum) at the rate stored on the log, not the
 /// employee's current rate — editing never re-rates history. The edit dialog previews with
 /// the same `payRatePercent` from the list response.
 pub async fn update(
@@ -134,24 +188,31 @@ pub async fn update(
     ValidatedJson(body): ValidatedJson<UpdatePaycheckLog>,
 ) -> AppResult<Json<PaycheckLog>> {
     user.require_role(&[Role::Admin])?;
+    let payment = Payment::from_body(&body.loads, body.lump_sum)?;
 
     let mut tx = state.pool.begin().await?;
 
-    let (employee_id, pay_rate) = paycheck_logs::lock_for_update(&mut tx, id)
+    let (employee_id, pay_rate, kind) = paycheck_logs::lock_for_update(&mut tx, id)
         .await?
         .ok_or_else(not_found)?;
+    if kind != payment.kind() {
+        return Err(AppError::BadRequest(format!(
+            "This paycheck log is {kind}; it can't be edited into {}",
+            payment.kind()
+        )));
+    }
     let fields = log_fields(
         body.week_start,
         body.week_end,
         body.payday,
-        &body.loads,
+        &payment,
         pay_rate,
     )?;
 
-    let log = paycheck_logs::update(&mut tx, id, &fields, user.id)
+    let log = paycheck_logs::update(&mut tx, id, &fields, body.complete, user.id)
         .await
         .map_err(|e| AppError::conflict_if_unique(e, DUPLICATE_WEEK))?;
-    paycheck_logs::replace_loads(&mut tx, id, employee_id, &body.loads, user.id).await?;
+    paycheck_logs::replace_loads(&mut tx, id, employee_id, payment.loads(), user.id).await?;
 
     let diff = serde_json::to_value(&body).map_err(anyhow::Error::from)?;
     record_audit(&mut tx, audit(id, AuditAction::Update, &user, diff)).await?;

@@ -9,10 +9,13 @@ const props = defineProps<{
 	employeeCut: number;
 	roundedPay: number;
 	payRatePercent: number;
-	completed: boolean;
+	hasPayment: boolean;
+	canComplete: boolean;
+	/** Which save is in flight, if any. */
+	processing: 'draft' | 'complete' | null;
 }>();
 
-const emit = defineEmits<{ complete: []; print: [] }>();
+const emit = defineEmits<{ complete: []; 'save-draft': []; paystub: [] }>();
 </script>
 
 <template>
@@ -31,11 +34,29 @@ const emit = defineEmits<{ complete: []; print: [] }>();
 				><strong>{{ formatCurrency(props.roundedPay) }}</strong>
 			</div>
 		</v-card-text>
-		<v-card-actions>
-			<v-btn v-if="!props.completed" color="primary" @click="emit('complete')">{{
-				t('payment.complete')
-			}}</v-btn>
-			<v-btn v-else color="secondary" @click="emit('print')">{{ t('payment.print') }}</v-btn>
+		<v-card-actions v-if="props.hasPayment" class="flex-wrap ga-2">
+			<v-btn
+				variant="outlined"
+				prepend-icon="mdi-file-document-outline"
+				@click="emit('paystub')"
+				>{{ t('payment.viewPaystub') }}</v-btn
+			>
+			<v-btn
+				variant="outlined"
+				prepend-icon="mdi-content-save-outline"
+				:disabled="!props.canComplete || props.processing === 'complete'"
+				:loading="props.processing === 'draft'"
+				@click="emit('save-draft')"
+				>{{ t('payment.saveDraft') }}</v-btn
+			>
+			<v-btn
+				variant="outlined"
+				color="primary"
+				:disabled="!props.canComplete || props.processing === 'draft'"
+				:loading="props.processing === 'complete'"
+				@click="emit('complete')"
+				>{{ t('payment.complete') }}</v-btn
+			>
 		</v-card-actions>
 	</v-card>
 </template>

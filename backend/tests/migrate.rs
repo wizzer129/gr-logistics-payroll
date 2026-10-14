@@ -4,7 +4,7 @@
 use gr_logistics::cli::migrate::apply;
 use sqlx::PgPool;
 
-const MIGRATION_COUNT: usize = 8;
+const MIGRATION_COUNT: usize = 9;
 
 #[sqlx::test(migrations = false)]
 async fn applies_everything_once_then_nothing(pool: PgPool) {

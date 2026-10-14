@@ -61,6 +61,11 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
   `employee_paycheck_logs.week_start`/`week_end`). Confirmed convention, not a guess.
   `payday` is a separate, required column on the same table — it's not derived from the
   week range (the business doesn't pay on a fixed offset after the period ends).
+- **A paycheck log is `kind` `loads` or `lump_sum`** (migration 0009). A lump sum is for
+  employees whose loads aren't tracked: the body sends `lumpSum` instead of `loads`
+  (exactly one of the two), it has no `employee_loads` rows, and it's paid in full —
+  `summary_total` = `employee_cut` = the amount (cents kept, no rounding), stored at
+  `pay_rate_percent` 100. A log's kind never changes on edit.
 - **`extraPay` is optional** everywhere (form, store type, `LoadInput`) — it defaults to
   `0`, is never required client- or server-side.
 - **A paycheck log stores its own totals and the rate they were computed at**

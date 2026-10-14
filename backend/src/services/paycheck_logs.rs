@@ -18,13 +18,15 @@ use crate::{
 /// the response a number either way.
 macro_rules! log_columns {
     () => {
-        "id, employee_id, week_start, week_end, payday, status,
+        "id, employee_id, week_start, week_end, payday, status, kind,
          COALESCE(summary_total, 0) AS summary_total, COALESCE(employee_cut, 0) AS employee_cut,
          pay_rate_percent"
     };
 }
 
 pub struct LogFields {
+    /// `loads` or `lump_sum`; only written on insert (a log's kind never changes).
+    pub kind: &'static str,
     pub week_start: NaiveDate,
     pub week_end: NaiveDate,
     pub payday: NaiveDate,
@@ -38,13 +40,14 @@ pub async fn list(
     filter: &PaycheckLogFilter,
 ) -> Result<Vec<PaycheckLogListItem>, sqlx::Error> {
     sqlx::query_as(
-        "SELECT pl.id, pl.employee_id, pl.week_start, pl.week_end, pl.payday, pl.status,
+        "SELECT pl.id, pl.employee_id, pl.week_start, pl.week_end, pl.payday, pl.status, pl.kind,
             COALESCE(pl.summary_total, 0) AS summary_total,
             COALESCE(pl.employee_cut, 0) AS employee_cut,
             pl.pay_rate_percent,
-            e.first_name, e.last_name
+            e.first_name, e.last_name, pl.created_at, u.email AS created_by_email
          FROM employee_paycheck_logs pl
          JOIN employees e ON e.id = pl.employee_id
+         LEFT JOIN users u ON u.id = pl.created_by
          WHERE ($1::uuid IS NULL OR pl.employee_id = $1)
          AND ($2::date IS NULL OR pl.week_start >= $2)
          AND ($3::date IS NULL OR pl.week_end <= $3)
@@ -88,13 +91,13 @@ pub async fn employee_pay_rate(
 }
 
 /// Locks the log row for the rest of the transaction (concurrent edits serialize) and
-/// returns its employee and the log's own pay rate, which edits recompute at.
+/// returns its employee, the log's own pay rate (which edits recompute at) and its kind.
 pub async fn lock_for_update(
     conn: &mut PgConnection,
     id: Uuid,
-) -> Result<Option<(Uuid, Decimal)>, sqlx::Error> {
+) -> Result<Option<(Uuid, Decimal, String)>, sqlx::Error> {
     sqlx::query_as(
-        "SELECT employee_id, pay_rate_percent
+        "SELECT employee_id, pay_rate_percent, kind
          FROM employee_paycheck_logs
          WHERE id = $1
          FOR UPDATE",
@@ -108,13 +111,14 @@ pub async fn insert(
     conn: &mut PgConnection,
     employee_id: Uuid,
     fields: &LogFields,
+    status: &str,
     user_id: Uuid,
 ) -> Result<PaycheckLog, sqlx::Error> {
     sqlx::query_as(concat!(
         "INSERT INTO employee_paycheck_logs
             (employee_id, week_start, week_end, payday, status, summary_total, employee_cut,
-             pay_rate_percent, created_by, last_edited_by)
-         VALUES ($1, $2, $3, $4, 'draft', $5, $6, $8, $7, $7)
+             pay_rate_percent, created_by, last_edited_by, kind)
+         VALUES ($1, $2, $3, $4, $10, $5, $6, $8, $7, $7, $9)
          RETURNING ",
         log_columns!()
     ))
@@ -126,20 +130,25 @@ pub async fn insert(
     .bind(fields.employee_cut)
     .bind(user_id)
     .bind(fields.pay_rate_percent)
+    .bind(fields.kind)
+    .bind(status)
     .fetch_one(conn)
     .await
 }
 
+/// `complete` also flips the status to `completed`; otherwise the status is left alone.
 pub async fn update(
     conn: &mut PgConnection,
     id: Uuid,
     fields: &LogFields,
+    complete: bool,
     user_id: Uuid,
 ) -> Result<PaycheckLog, sqlx::Error> {
     sqlx::query_as(concat!(
         "UPDATE employee_paycheck_logs SET
             week_start = $2, week_end = $3, payday = $4,
             summary_total = $5, employee_cut = $6, pay_rate_percent = $8,
+            status = CASE WHEN $9 THEN 'completed' ELSE status END,
             last_edited_by = $7, updated_at = now()
          WHERE id = $1
          RETURNING ",
@@ -153,6 +162,7 @@ pub async fn update(
     .bind(fields.employee_cut)
     .bind(user_id)
     .bind(fields.pay_rate_percent)
+    .bind(complete)
     .fetch_one(conn)
     .await
 }

@@ -40,13 +40,62 @@
 		"date": "Fecha",
 		"pay": "Pago",
 		"extraPay": "Pago Extra",
+		"viewPaystub": "Talón de Pago",
 		"complete": "Completar",
+		"saveDraft": "Guardar Borrador",
+		"processed": "Pago procesado",
+		"draftSaved": "Borrador guardado",
+		"processFailed": "No se pudo procesar el pago: {error}",
 		"print": "Imprimir",
+		"printPaystub": "Imprimir Talón",
 		"addManualLoad": "Agregar Carga Manualmente",
-		"uploadScreenshot": "Subir Captura de Pantalla",
+		"lumpSum": "Pago Global",
+		"lumpSumAmount": "Monto del Pago Global",
+		"lumpSumHint": "Se paga completo al empleado, sin descuento.",
+		"uploadLoads": "Subir Cargas",
+		"uploadCsv": "Subir CSV",
+		"deleteCsv": "Eliminar CSV",
+		"csvTotal": "Total (del CSV)",
+		"csvTotalPay": "Pago Total (del CSV)",
+		"csvNotInFile": "No está en el archivo",
+		"csvMismatch": "No coincide con el monto calculado ({expected})",
+		"csvEmployeeNotFound": "Ningún empleado coincide con \"{name}\" del CSV. Seleccione el empleado manualmente.",
+		"csvErrorAtLine": "Línea {line}: {reason}",
+		"csvErrors": {
+			"empty": "El archivo está vacío.",
+			"missingNameOrPayday": "La primera fila debe tener el nombre del empleado y el día de pago.",
+			"badPayday": "El día de pago debe ser una fecha como 10/16/26.",
+			"missingHeader": "Se esperaba una fila de encabezado: Date, Load, Pay, Extra Pay.",
+			"badDate": "La fecha debe ser como 10/16/26.",
+			"missingStore": "Falta la carga (tienda).",
+			"badPay": "El pago debe ser un número.",
+			"badExtraPay": "El pago extra debe ser un número o estar vacío.",
+			"noLoads": "El archivo no tiene cargas."
+		},
 		"status": "Estado",
 		"editTitle": "Editar Pago",
-		"confirmDelete": "¿Eliminar este registro de pago? Esta acción no se puede deshacer."
+		"confirmDelete": "¿Eliminar este registro de pago? Esta acción no se puede deshacer.",
+		"saveFailed": "No se pudo guardar el pago."
+	},
+	"paystub": {
+		"title": "Talón de Pago",
+		"contractor": "Contratista",
+		"ownerOperator": "Propietario Operador",
+		"workWeek": "Semana de Trabajo",
+		"loadCount": "Cargas",
+		"load": "Carga",
+		"extra": "Extra",
+		"extraPayTotal": "Pago Extra",
+		"noLoads": "Aún no hay cargas",
+		"noEmployee": "Ningún empleado seleccionado",
+		"paymentType": "Tipo de Pago"
+	},
+	"history": {
+		"title": "Historial de Pagos Procesados",
+		"employee": "Empleado",
+		"processedAt": "Procesado",
+		"empty": "Aún no se han procesado pagos",
+		"processedByUser": "por {user}"
 	},
 	"employees": {
 		"add": "Agregar Empleado",
@@ -54,7 +103,9 @@
 		"delete": "Eliminar Empleado",
 		"firstName": "Nombre",
 		"lastName": "Apellido",
-		"payRatePercent": "Porcentaje de Pago %"
+		"payRatePercent": "Porcentaje de Pago %",
+		"payRateHint": "Los cambios aplican solo a pagos nuevos; los existentes conservan su tarifa.",
+		"saveFailed": "No se pudo guardar el empleado."
 	},
 	"common": {
 		"edit": "Editar",
@@ -62,6 +113,11 @@
 		"save": "Guardar",
 		"cancel": "Cancelar",
 		"actions": "Acciones",
-		"allEmployees": "Todos los Empleados"
+		"allEmployees": "Todos los Empleados",
+		"close": "Cerrar"
+	},
+	"pagination": {
+		"pageSize": "Por página",
+		"range": "{start}–{end} de {total}"
 	}
 }

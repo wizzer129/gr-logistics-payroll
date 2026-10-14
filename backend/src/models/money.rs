@@ -75,6 +75,15 @@ pub fn amount(value: &Decimal, _ctx: &()) -> garde::Result {
     check_cents(value)
 }
 
+/// garde rule for a lump-sum payment: like [`amount`], but it must be more than 0.
+pub fn lump_sum(value: &Option<Decimal>, ctx: &()) -> garde::Result {
+    let Some(value) = value else { return Ok(()) };
+    if *value <= Decimal::ZERO {
+        return Err(garde::Error::new("must be greater than 0"));
+    }
+    amount(value, ctx)
+}
+
 /// garde rule for `pay_rate_percent` (`numeric(5, 2)`): 0 < value ≤ 100.
 pub fn pay_rate(value: &Option<Decimal>, _ctx: &()) -> garde::Result {
     let Some(value) = value else { return Ok(()) };

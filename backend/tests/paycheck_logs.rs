@@ -402,6 +402,8 @@ async fn list_filters_and_orders_newest_first(pool: PgPool) {
     let all = ctx.req("GET", "/api/paycheck-logs", None).await;
     assert_eq!(weeks(&all), ["2026-10-04", "2026-09-27", "2026-09-20"]);
     assert_eq!(all.body[0]["firstName"], "Ana");
+    assert_eq!(all.body[0]["createdByEmail"], "admin@example.com");
+    assert!(all.body[0]["createdAt"].is_string());
 
     let by_employee = ctx
         .req("GET", &format!("/api/paycheck-logs?employeeId={ana}"), None)
@@ -572,7 +574,8 @@ async fn migration_backfills_existing_logs_with_the_employees_rate(pool: PgPool)
         applied,
         [
             "0007_paycheck_log_pay_rate.sql",
-            "0008_paycheck_log_pay_rate_not_null.sql"
+            "0008_paycheck_log_pay_rate_not_null.sql",
+            "0009_paycheck_log_kind.sql"
         ]
     );
 
@@ -582,4 +585,244 @@ async fn migration_backfills_existing_logs_with_the_employees_rate(pool: PgPool)
             .await
             .unwrap();
     assert_eq!(rate, "40.00");
+}
+
+fn lump_sum_body(employee_id: &str, week_start: &str, amount: Value) -> Value {
+    json!({
+        "employeeId": employee_id,
+        "weekStart": week_start,
+        "weekEnd": "2026-10-10",
+        "payday": "2026-10-16",
+        "lumpSum": amount,
+    })
+}
+
+#[sqlx::test(migrations = false)]
+async fn lump_sum_is_paid_in_full_with_no_loads(pool: PgPool) {
+    let ctx = Ctx::new(pool).await;
+    let employee = ctx.employee(json!(42)).await;
+
+    let response = ctx
+        .req(
+            "POST",
+            "/api/paycheck-logs",
+            Some(&lump_sum_body(&employee, "2026-10-04", json!(1234.56))),
+        )
+        .await;
+
+    assert_eq!(response.status, 201, "{:?}", response.body);
+    let log = &response.body;
+    assert_eq!(log["kind"], "lump_sum");
+    assert_eq!(log["status"], "draft");
+    // No cut: total and pay are both the amount, cents kept, recorded at 100%.
+    assert_eq!(log["summaryTotal"].to_string(), "1234.56");
+    assert_eq!(log["employeeCut"].to_string(), "1234.56");
+    assert_eq!(num(&log["payRatePercent"]), 100.0);
+    assert_eq!(ctx.count("SELECT count(*) FROM employee_loads").await, 0);
+    assert_eq!(
+        ctx.count("SELECT count(*) FROM audit_log WHERE entity = 'employee_paycheck_log' AND action = 'create'").await,
+        1
+    );
+
+    let list = ctx.req("GET", "/api/paycheck-logs", None).await;
+    assert_eq!(list.body[0]["kind"], "lump_sum");
+
+    let id = log["id"].as_str().unwrap();
+    let loads = ctx
+        .req("GET", &format!("/api/paycheck-logs/{id}/loads"), None)
+        .await;
+    assert_eq!(loads.body, json!([]));
+}
+
+#[sqlx::test(migrations = false)]
+async fn loads_logs_report_their_kind(pool: PgPool) {
+    let ctx = Ctx::new(pool).await;
+    let employee = ctx.employee(json!(42)).await;
+
+    let response = ctx
+        .req(
+            "POST",
+            "/api/paycheck-logs",
+            Some(&log_body(&employee, "2026-10-04", one_load(json!(100)))),
+        )
+        .await;
+    assert_eq!(response.status, 201);
+    assert_eq!(response.body["kind"], "loads");
+}
+
+#[sqlx::test(migrations = false)]
+async fn invalid_lump_sums_are_400_and_write_nothing(pool: PgPool) {
+    let ctx = Ctx::new(pool).await;
+    let employee = ctx.employee(json!(42)).await;
+
+    let mut both = lump_sum_body(&employee, "2026-10-04", json!(100));
+    both["loads"] = one_load(json!(100));
+
+    let cases = [
+        both,
+        lump_sum_body(&employee, "2026-10-04", json!(0)),
+        lump_sum_body(&employee, "2026-10-04", json!(-5)),
+        lump_sum_body(&employee, "2026-10-04", json!(1.005)),
+        lump_sum_body(&employee, "2026-10-04", json!("100")),
+        lump_sum_body(&employee, "2026-10-04", json!(100000000)),
+    ];
+
+    for body in &cases {
+        let response = ctx.req("POST", "/api/paycheck-logs", Some(body)).await;
+        assert_eq!(response.status, 400, "{body}: {:?}", response.body);
+        assert!(response.body["error"].is_string());
+    }
+
+    assert_eq!(
+        ctx.count("SELECT count(*) FROM employee_paycheck_logs")
+            .await,
+        0
+    );
+}
+
+#[sqlx::test(migrations = false)]
+async fn lump_sum_edits_keep_their_kind(pool: PgPool) {
+    let ctx = Ctx::new(pool).await;
+    let employee = ctx.employee(json!(42)).await;
+
+    let lump = ctx
+        .req(
+            "POST",
+            "/api/paycheck-logs",
+            Some(&lump_sum_body(&employee, "2026-10-04", json!(800))),
+        )
+        .await;
+    let lump_id = lump.body["id"].as_str().unwrap().to_owned();
+    let other = ctx.employee(json!(42)).await;
+    let loads = ctx
+        .req(
+            "POST",
+            "/api/paycheck-logs",
+            Some(&log_body(&other, "2026-10-04", one_load(json!(100)))),
+        )
+        .await;
+    let loads_id = loads.body["id"].as_str().unwrap().to_owned();
+
+    let edit = json!({
+        "weekStart": "2026-10-04", "weekEnd": "2026-10-10", "payday": "2026-10-17",
+        "lumpSum": 950.5,
+    });
+    let response = ctx
+        .req("PUT", &format!("/api/paycheck-logs/{lump_id}"), Some(&edit))
+        .await;
+    assert_eq!(response.status, 200, "{:?}", response.body);
+    assert_eq!(num(&response.body["summaryTotal"]), 950.5);
+    assert_eq!(num(&response.body["employeeCut"]), 950.5);
+    assert_eq!(response.body["payday"], "2026-10-17");
+
+    // A lump sum can't become a loads log, nor the other way round.
+    let to_loads = json!({
+        "weekStart": "2026-10-04", "weekEnd": "2026-10-10", "payday": "2026-10-17",
+        "loads": one_load(json!(100)),
+    });
+    let response = ctx
+        .req(
+            "PUT",
+            &format!("/api/paycheck-logs/{lump_id}"),
+            Some(&to_loads),
+        )
+        .await;
+    assert_eq!(response.status, 400, "{:?}", response.body);
+
+    let to_lump = json!({
+        "weekStart": "2026-10-04", "weekEnd": "2026-10-10", "payday": "2026-10-16",
+        "lumpSum": 100,
+    });
+    let response = ctx
+        .req(
+            "PUT",
+            &format!("/api/paycheck-logs/{loads_id}"),
+            Some(&to_lump),
+        )
+        .await;
+    assert_eq!(response.status, 400, "{:?}", response.body);
+    assert_eq!(ctx.count("SELECT count(*) FROM employee_loads").await, 1);
+}
+
+#[sqlx::test(migrations = false)]
+async fn create_can_complete_in_one_step(pool: PgPool) {
+    let ctx = Ctx::new(pool).await;
+    let employee = ctx.employee(json!(42)).await;
+
+    let mut body = log_body(&employee, "2026-10-04", one_load(json!(1000)));
+    body["complete"] = json!(true);
+    let response = ctx.req("POST", "/api/paycheck-logs", Some(&body)).await;
+    assert_eq!(response.status, 201, "{:?}", response.body);
+    assert_eq!(response.body["status"], "completed");
+    assert_eq!(num(&response.body["employeeCut"]), 420.0);
+
+    let mut lump = lump_sum_body(&employee, "2026-10-11", json!(500));
+    lump["weekEnd"] = json!("2026-10-17");
+    lump["complete"] = json!(true);
+    let response = ctx.req("POST", "/api/paycheck-logs", Some(&lump)).await;
+    assert_eq!(response.status, 201, "{:?}", response.body);
+    assert_eq!(response.body["status"], "completed");
+
+    let diff: (Value,) = sqlx::query_as(
+        "SELECT diff FROM audit_log WHERE entity = 'employee_paycheck_log' AND action = 'create' ORDER BY created_at LIMIT 1",
+    )
+    .fetch_one(&ctx.pool)
+    .await
+    .unwrap();
+    assert_eq!(diff.0, json!({ "status": "completed" }));
+
+    // Omitted still means draft.
+    let other = ctx.employee(json!(42)).await;
+    let draft = ctx
+        .req(
+            "POST",
+            "/api/paycheck-logs",
+            Some(&log_body(&other, "2026-10-04", one_load(json!(10)))),
+        )
+        .await;
+    assert_eq!(draft.status, 201, "{:?}", draft.body);
+    assert_eq!(draft.body["status"], "draft");
+}
+
+#[sqlx::test(migrations = false)]
+async fn edit_can_complete_a_draft_in_one_step(pool: PgPool) {
+    let ctx = Ctx::new(pool).await;
+    let employee = ctx.employee(json!(42)).await;
+
+    let draft = ctx
+        .req(
+            "POST",
+            "/api/paycheck-logs",
+            Some(&log_body(&employee, "2026-10-04", one_load(json!(100)))),
+        )
+        .await;
+    let id = draft.body["id"].as_str().unwrap().to_owned();
+
+    // Saving without `complete` keeps it a draft.
+    let mut edit = json!({
+        "weekStart": "2026-10-04", "weekEnd": "2026-10-10", "payday": "2026-10-16",
+        "loads": one_load(json!(1000)),
+    });
+    let response = ctx
+        .req("PUT", &format!("/api/paycheck-logs/{id}"), Some(&edit))
+        .await;
+    assert_eq!(response.status, 200, "{:?}", response.body);
+    assert_eq!(response.body["status"], "draft");
+
+    // With `complete`, the edit lands and the log is completed together.
+    edit["loads"] = one_load(json!(2000));
+    edit["complete"] = json!(true);
+    let response = ctx
+        .req("PUT", &format!("/api/paycheck-logs/{id}"), Some(&edit))
+        .await;
+    assert_eq!(response.status, 200, "{:?}", response.body);
+    assert_eq!(response.body["status"], "completed");
+    assert_eq!(num(&response.body["employeeCut"]), 840.0);
+
+    // A later plain save never reopens it.
+    edit.as_object_mut().unwrap().remove("complete");
+    let response = ctx
+        .req("PUT", &format!("/api/paycheck-logs/{id}"), Some(&edit))
+        .await;
+    assert_eq!(response.body["status"], "completed");
 }

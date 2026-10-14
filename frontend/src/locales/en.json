@@ -40,13 +40,62 @@
 		"date": "Date",
 		"pay": "Payment",
 		"extraPay": "Extra Pay",
+		"viewPaystub": "Paystub",
 		"complete": "Complete",
+		"saveDraft": "Save Draft",
+		"processed": "Payment processed",
+		"draftSaved": "Draft saved",
+		"processFailed": "Couldn't process payment: {error}",
 		"print": "Print",
+		"printPaystub": "Print Paystub",
 		"addManualLoad": "Add Load Manually",
-		"uploadScreenshot": "Upload Screenshot",
+		"lumpSum": "Lump Sum",
+		"lumpSumAmount": "Lump Sum Amount",
+		"lumpSumHint": "Paid in full to the employee — no cut is taken.",
+		"uploadLoads": "Upload Loads",
+		"uploadCsv": "Upload CSV",
+		"deleteCsv": "Delete CSV",
+		"csvTotal": "Total (from CSV)",
+		"csvTotalPay": "Total Pay (from CSV)",
+		"csvNotInFile": "Not in file",
+		"csvMismatch": "Doesn't match the calculated amount ({expected})",
+		"csvEmployeeNotFound": "No employee matches \"{name}\" from the CSV. Select the employee manually.",
+		"csvErrorAtLine": "Line {line}: {reason}",
+		"csvErrors": {
+			"empty": "The file is empty.",
+			"missingNameOrPayday": "The first row must be the employee name and payday.",
+			"badPayday": "The payday must be a date like 10/16/26.",
+			"missingHeader": "Expected a header row: Date, Load, Pay, Extra Pay.",
+			"badDate": "The date must look like 10/16/26.",
+			"missingStore": "The load (store) is missing.",
+			"badPay": "Pay must be a number.",
+			"badExtraPay": "Extra pay must be a number or empty.",
+			"noLoads": "The file has no loads."
+		},
 		"status": "Status",
 		"editTitle": "Edit Paycheck",
-		"confirmDelete": "Delete this paycheck log? This cannot be undone."
+		"confirmDelete": "Delete this paycheck log? This cannot be undone.",
+		"saveFailed": "Couldn't save the paycheck."
+	},
+	"paystub": {
+		"title": "Pay Stub",
+		"contractor": "Contractor",
+		"ownerOperator": "Owner Operator",
+		"workWeek": "Work Week",
+		"loadCount": "Loads",
+		"load": "Load",
+		"extra": "Extra",
+		"extraPayTotal": "Extra Pay",
+		"noLoads": "No loads yet",
+		"noEmployee": "No employee selected",
+		"paymentType": "Payment Type"
+	},
+	"history": {
+		"title": "Payment Process History",
+		"employee": "Employee",
+		"processedAt": "Processed",
+		"empty": "No payments processed yet",
+		"processedByUser": "by {user}"
 	},
 	"employees": {
 		"add": "Add Employee",
@@ -54,7 +103,9 @@
 		"delete": "Delete Employee",
 		"firstName": "First Name",
 		"lastName": "Last Name",
-		"payRatePercent": "Pay Rate %"
+		"payRatePercent": "Pay Rate %",
+		"payRateHint": "Changes apply to new paychecks only — existing ones keep their rate.",
+		"saveFailed": "Couldn't save the employee."
 	},
 	"common": {
 		"edit": "Edit",
@@ -62,6 +113,11 @@
 		"save": "Save",
 		"cancel": "Cancel",
 		"actions": "Actions",
-		"allEmployees": "All Employees"
+		"allEmployees": "All Employees",
+		"close": "Close"
+	},
+	"pagination": {
+		"pageSize": "Page size",
+		"range": "{start}–{end} of {total}"
 	}
 }

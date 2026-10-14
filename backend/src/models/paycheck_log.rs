@@ -1,4 +1,4 @@
-use chrono::NaiveDate;
+use chrono::{DateTime, NaiveDate, Utc};
 use garde::Validate;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,8 @@ pub struct PaycheckLog {
     pub payday: NaiveDate,
     /// `draft` or `completed`.
     pub status: String,
+    /// `loads` (itemized) or `lump_sum` (one amount, no loads, paid at 100%).
+    pub kind: String,
     #[serde(with = "money::number")]
     pub summary_total: Decimal,
     #[serde(with = "money::number")]
@@ -26,7 +28,7 @@ pub struct PaycheckLog {
     pub pay_rate_percent: Decimal,
 }
 
-/// GET /api/paycheck-logs row: the log plus the employee's name.
+/// GET /api/paycheck-logs row: the log plus the employee's name and who processed it when.
 #[derive(Debug, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct PaycheckLogListItem {
@@ -35,6 +37,9 @@ pub struct PaycheckLogListItem {
     pub log: PaycheckLog,
     pub first_name: String,
     pub last_name: String,
+    pub created_at: DateTime<Utc>,
+    /// None if the creating user was deleted (or the log predates `created_by`).
+    pub created_by_email: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -58,12 +63,28 @@ pub struct CreatePaycheckLog {
     pub week_end: NaiveDate,
     #[garde(skip)]
     pub payday: NaiveDate,
-    #[garde(length(min = 1), dive)]
+    /// Empty for a lump sum. Send either `loads` or `lumpSum`, never both.
+    #[serde(default)]
+    #[garde(dive)]
     pub loads: Vec<LoadInput>,
+    /// A lump-sum payment instead of loads: paid in full, no cut taken.
+    #[serde(
+        default,
+        with = "money::number_option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[garde(custom(money::lump_sum))]
+    pub lump_sum: Option<Decimal>,
+    /// `true` saves the log as `completed` right away (in the same transaction as the
+    /// create); omitted or `false` saves a `draft`.
+    #[serde(default)]
+    #[garde(skip)]
+    pub complete: bool,
 }
 
-/// Editing replaces the week range, payday and the full set of loads. The employee is
-/// immutable, so there's no `employee_id` field (a sent one is ignored).
+/// Editing replaces the week range, payday and the full set of loads (or the lump sum). The
+/// employee and the log's kind are immutable, so there's no `employee_id` field (a sent one
+/// is ignored) and a lump-sum log can't be edited into a loads log or back.
 #[derive(Debug, Deserialize, Serialize, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdatePaycheckLog {
@@ -73,6 +94,21 @@ pub struct UpdatePaycheckLog {
     pub week_end: NaiveDate,
     #[garde(skip)]
     pub payday: NaiveDate,
-    #[garde(length(min = 1), dive)]
+    /// Empty for a lump sum. Send either `loads` or `lumpSum`, never both.
+    #[serde(default)]
+    #[garde(dive)]
     pub loads: Vec<LoadInput>,
+    /// A lump-sum payment instead of loads: paid in full, no cut taken.
+    #[serde(
+        default,
+        with = "money::number_option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[garde(custom(money::lump_sum))]
+    pub lump_sum: Option<Decimal>,
+    /// `true` also marks the log `completed`, in the same transaction as the edit. Omitted
+    /// or `false` leaves the status as it is (a completed log stays completed).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[garde(skip)]
+    pub complete: bool,
 }

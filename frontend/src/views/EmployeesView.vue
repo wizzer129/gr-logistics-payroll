@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import EmployeeForm, { type EmployeeInput } from '../components/employees/EmployeeForm.vue';
 import EmployeeList, { type Employee } from '../components/employees/EmployeeList.vue';
+import EmployeeEditDialog from '../components/employees/EmployeeEditDialog.vue';
 
 const { t } = useI18n();
 const employees = ref<Employee[]>([]);
@@ -27,8 +28,37 @@ async function onDelete(employee: Employee): Promise<void> {
 	await loadEmployees();
 }
 
-function onEdit(_employee: Employee): void {
-	// TODO: edit flow (inline or dialog form)
+const editOpen = ref(false);
+const editing = ref<Employee | null>(null);
+const editSaving = ref(false);
+const editError = ref<string | null>(null);
+
+function onEdit(employee: Employee): void {
+	editing.value = employee;
+	editError.value = null;
+	editOpen.value = true;
+}
+
+async function onEditSave(id: string, input: EmployeeInput): Promise<void> {
+	editSaving.value = true;
+	editError.value = null;
+	try {
+		const response = await fetch(`/api/employees/${id}`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			credentials: 'include',
+			body: JSON.stringify(input),
+		});
+		if (!response.ok) {
+			const body = await response.json().catch(() => null);
+			editError.value = body?.error ?? t('employees.saveFailed');
+			return;
+		}
+		editOpen.value = false;
+		await loadEmployees();
+	} finally {
+		editSaving.value = false;
+	}
 }
 
 onMounted(loadEmployees);
@@ -46,5 +76,13 @@ onMounted(loadEmployees);
 				<EmployeeList :employees="employees" @edit="onEdit" @delete="onDelete" />
 			</v-col>
 		</v-row>
+
+		<EmployeeEditDialog
+			v-model="editOpen"
+			:employee="editing"
+			:saving="editSaving"
+			:error="editError"
+			@save="onEditSave"
+		/>
 	</v-container>
 </template>
