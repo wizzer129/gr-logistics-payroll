@@ -6,6 +6,7 @@ import { formatCurrency } from '../utils/currency';
 import { formatMonthDay } from '../utils/week';
 import PaymentsByEmployeeChart from '../components/dashboard/PaymentsByEmployeeChart.vue';
 import PaymentsOverTimeChart from '../components/dashboard/PaymentsOverTimeChart.vue';
+import { apiFetch } from '../utils/api';
 
 type DashboardSummary = {
 	year: number;
@@ -46,14 +47,12 @@ const selectedEmployeeId = ref<string | null>(null);
 const employeeSummary = ref<EmployeeSummary | null>(null);
 
 async function loadSummary(): Promise<void> {
-	const response = await fetch('/api/dashboard/summary', { credentials: 'include' });
+	const response = await apiFetch('/api/dashboard/summary');
 	if (response.ok) summary.value = await response.json();
 }
 
 async function loadEmployeeSummary(employeeId: string): Promise<void> {
-	const response = await fetch(`/api/dashboard/employee/${employeeId}/summary`, {
-		credentials: 'include',
-	});
+	const response = await apiFetch(`/api/dashboard/employee/${employeeId}/summary`);
 	employeeSummary.value = response.ok ? await response.json() : null;
 }
 

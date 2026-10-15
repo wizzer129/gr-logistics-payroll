@@ -10,6 +10,7 @@ import LoadForm from '../components/payment-processing/LoadForm.vue';
 import LoadList from '../components/payment-processing/LoadList.vue';
 import PaystubPrinter from '../components/payment-processing/PaystubPrinter.vue';
 import type { PaystubData } from '../components/payment-processing/Paystub.vue';
+import { apiFetch } from '../utils/api';
 
 type PaycheckLogRow = {
 	id: string;
@@ -76,7 +77,7 @@ async function search(): Promise<void> {
 	if (to.value) params.set('to', to.value);
 
 	// Backend already orders week_start DESC — latest to oldest by default.
-	const response = await fetch(`/api/paycheck-logs?${params}`, { credentials: 'include' });
+	const response = await apiFetch(`/api/paycheck-logs?${params}`);
 	if (response.ok) {
 		results.value = await response.json();
 		page.value = 1;
@@ -134,9 +135,7 @@ async function openEdit(log: PaycheckLogRow): Promise<void> {
 	if (editIsLumpSum.value) {
 		editLoads.value = [];
 	} else {
-		const response = await fetch(`/api/paycheck-logs/${log.id}/loads`, {
-			credentials: 'include',
-		});
+		const response = await apiFetch(`/api/paycheck-logs/${log.id}/loads`);
 		editLoads.value = response.ok ? await response.json() : [];
 	}
 	recalcEdit();
@@ -158,10 +157,9 @@ async function saveEdit(complete = false): Promise<void> {
 	if (!editingLog.value) return;
 	editError.value = null;
 
-	const response = await fetch(`/api/paycheck-logs/${editingLog.value.id}`, {
+	const response = await apiFetch(`/api/paycheck-logs/${editingLog.value.id}`, {
 		method: 'PUT',
 		headers: { 'Content-Type': 'application/json' },
-		credentials: 'include',
 		body: JSON.stringify({
 			weekStart: editForm.weekStart,
 			weekEnd: editForm.weekEnd,
@@ -212,9 +210,8 @@ function cancelEdit(): void {
 async function onDelete(log: PaycheckLogRow): Promise<void> {
 	if (!confirm(t('payment.confirmDelete'))) return;
 
-	const response = await fetch(`/api/paycheck-logs/${log.id}`, {
+	const response = await apiFetch(`/api/paycheck-logs/${log.id}`, {
 		method: 'DELETE',
-		credentials: 'include',
 	});
 
 	if (response.ok) results.value = results.value.filter((r) => r.id !== log.id);

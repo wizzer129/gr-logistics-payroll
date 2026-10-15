@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
+import { apiFetch } from '../utils/api';
 
 export type User = { id: string; email: string; role: 'admin' | 'employee' };
 
@@ -33,10 +34,9 @@ export const useAuthStore = defineStore('auth', () => {
 	}
 
 	async function login(email: string, password: string): Promise<void> {
-		const response = await fetch('/api/auth/login', {
+		const response = await apiFetch('/api/auth/login', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			credentials: 'include',
 			body: JSON.stringify({ email, password }),
 		});
 
@@ -46,7 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
 	}
 
 	async function logout(): Promise<void> {
-		await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+		await apiFetch('/api/auth/logout', { method: 'POST' });
 		setUser(null);
 	}
 
@@ -59,7 +59,7 @@ export const useAuthStore = defineStore('auth', () => {
 		if (!user.value) return;
 
 		try {
-			const response = await fetch('/api/auth/me', { credentials: 'include' });
+			const response = await apiFetch('/api/auth/me');
 
 			if (response.ok) setUser(await response.json());
 			else setUser(null);

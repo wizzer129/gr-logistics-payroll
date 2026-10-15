@@ -4,27 +4,27 @@ import { useI18n } from 'vue-i18n';
 import EmployeeForm, { type EmployeeInput } from '../components/employees/EmployeeForm.vue';
 import EmployeeList, { type Employee } from '../components/employees/EmployeeList.vue';
 import EmployeeEditDialog from '../components/employees/EmployeeEditDialog.vue';
+import { apiFetch } from '../utils/api';
 
 const { t } = useI18n();
 const employees = ref<Employee[]>([]);
 
 async function loadEmployees(): Promise<void> {
-	const response = await fetch('/api/employees', { credentials: 'include' });
+	const response = await apiFetch('/api/employees');
 	if (response.ok) employees.value = await response.json();
 }
 
 async function onSave(input: EmployeeInput): Promise<void> {
-	await fetch('/api/employees', {
+	await apiFetch('/api/employees', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		credentials: 'include',
 		body: JSON.stringify(input),
 	});
 	await loadEmployees();
 }
 
 async function onDelete(employee: Employee): Promise<void> {
-	await fetch(`/api/employees/${employee.id}`, { method: 'DELETE', credentials: 'include' });
+	await apiFetch(`/api/employees/${employee.id}`, { method: 'DELETE' });
 	await loadEmployees();
 }
 
@@ -43,10 +43,9 @@ async function onEditSave(id: string, input: EmployeeInput): Promise<void> {
 	editSaving.value = true;
 	editError.value = null;
 	try {
-		const response = await fetch(`/api/employees/${id}`, {
+		const response = await apiFetch(`/api/employees/${id}`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
-			credentials: 'include',
 			body: JSON.stringify(input),
 		});
 		if (!response.ok) {

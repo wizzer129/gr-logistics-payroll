@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import { apiFetch } from '../utils/api';
 
 export type EmployeeOption = {
 	id: string;
@@ -11,7 +12,7 @@ export function useEmployees() {
 	const employees = ref<EmployeeOption[]>([]);
 
 	async function loadEmployees(): Promise<void> {
-		const response = await fetch('/api/employees', { credentials: 'include' });
+		const response = await apiFetch('/api/employees');
 		if (response.ok) employees.value = await response.json();
 	}
 

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { formatMonthDay } from '../../utils/week';
+import { apiFetch } from '../../utils/api';
 
 type HistoryRow = {
 	id: string;
@@ -22,7 +23,7 @@ const loading = ref(false);
 async function refresh(): Promise<void> {
 	loading.value = true;
 	try {
-		const response = await fetch('/api/paycheck-logs', { credentials: 'include' });
+		const response = await apiFetch('/api/paycheck-logs');
 		if (!response.ok) return;
 		const logs: HistoryRow[] = await response.json();
 		rows.value = logs.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, MAX_ROWS);

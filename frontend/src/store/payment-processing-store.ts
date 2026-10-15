@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { calculateEmployeeCut, DEFAULT_PAY_RATE_PERCENT } from '../utils/payment-calc';
 import { getWeekRange, toIsoDate } from '../utils/week';
+import { apiFetch } from '../utils/api';
 
 export type Load = {
 	storeName: string;
@@ -56,10 +57,9 @@ export const usePaymentProcessingStore = defineStore('payment-processing', () =>
 	async function submit({ complete }: { complete: boolean }): Promise<void> {
 		if (!employeeId.value) throw new Error('No employee selected');
 
-		const response = await fetch('/api/paycheck-logs', {
+		const response = await apiFetch('/api/paycheck-logs', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			credentials: 'include',
 			body: JSON.stringify({
 				employeeId: employeeId.value,
 				weekStart: weekRange.value.weekStart,
