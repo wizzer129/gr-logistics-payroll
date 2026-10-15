@@ -1,6 +1,6 @@
 # Production stack for the server: Postgres + one-shot migrate + backend, pulling the image
 # CI pushes to GHCR (.github/workflows/deploy.yml) instead of building it. Nginx Proxy Manager
-# reaches the backend over its own Docker network at http://gr-logistics-backend:3000;
+# reaches the backend over its own Docker network at http://gr-logistics-backend:4444;
 # nothing here publishes a port to the host.
 #
 # Setup, in this directory:
@@ -17,6 +17,8 @@ x-backend: &backend
     image: ghcr.io/wizzer129/gr-logistics-payroll-backend:${BACKEND_IMAGE_TAG:-latest}
     env_file: backend.env
     environment:
+        # Fixed here rather than in backend.env: it's the port NPM's proxy host points at.
+        PORT: 4444
         DATABASE_URL: postgres://gr_logistics:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/gr_logistics
     restart: unless-stopped
 
