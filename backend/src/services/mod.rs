@@ -4,6 +4,5 @@
 pub mod audit;
 pub mod dashboard;
 pub mod employees;
-pub mod load_extraction;
 pub mod paycheck_logs;
 pub mod stores;

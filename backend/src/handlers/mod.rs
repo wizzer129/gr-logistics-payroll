@@ -4,5 +4,4 @@ pub mod auth;
 pub mod dashboard;
 pub mod employees;
 pub mod health;
-pub mod loads;
 pub mod paycheck_logs;

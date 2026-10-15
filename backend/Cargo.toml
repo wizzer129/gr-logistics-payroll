@@ -6,14 +6,13 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.104"
 argon2 = "0.6.0"
-axum = { version = "0.8.9", features = ["multipart", "macros"] }
+axum = { version = "0.8.9", features = ["macros"] }
 axum-extra = { version = "0.12.6", features = ["cookie"] }
-base64 = "0.23.1"
 chrono = { version = "0.4.45", default-features = false, features = ["serde", "clock", "std"] }
 clap = { version = "4.6.7", features = ["derive", "env"] }
 garde = { version = "0.23.0", features = ["derive", "email"] }
 include_dir = "0.7.4"
-reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }
+reqwest = { version = "0.13.5", default-features = false }
 rust_decimal = { version = "1.43.0", features = ["serde-with-float", "serde-with-arbitrary-precision"] }
 rust_decimal_macros = "1.40.0"
 serde = { version = "1.0.229", features = ["derive"] }
@@ -30,7 +29,6 @@ uuid = { version = "1.28.0", features = ["serde", "v4"] }
 
 [dev-dependencies]
 tower = { version = "0.5.3", features = ["util"] }
-wiremock = "0.6.5"
 # `#[sqlx::test]` needs the migrate feature even with `migrations = false`. Dev-only, so
 # the release binary doesn't carry sqlx's migrator — we use our own (src/cli/migrate.rs).
 sqlx = { version = "0.9.0", default-features = false, features = ["migrate"] }

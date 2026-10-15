@@ -31,10 +31,6 @@ pub async fn serve(config: Config) -> anyhow::Result<()> {
     let state = AppState {
         pool,
         config: Arc::new(config),
-        // Vision extraction with adaptive thinking can take a while; don't hang forever.
-        http: reqwest::Client::builder()
-            .timeout(Duration::from_secs(120))
-            .build()?,
     };
 
     let listener = TcpListener::bind(("0.0.0.0", port)).await?;

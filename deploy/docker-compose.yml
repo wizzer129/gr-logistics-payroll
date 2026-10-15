@@ -1,0 +1,79 @@
+# Production stack for the server: Postgres + one-shot migrate + backend, pulling the image
+# CI pushes to GHCR (.github/workflows/deploy.yml) instead of building it. Nginx Proxy Manager
+# reaches the backend over its own Docker network at http://gr-logistics-backend:3000;
+# nothing here publishes a port to the host.
+#
+# Setup, in this directory:
+#   cp .env.example .env && cp backend.env.example backend.env   # then fill both in
+#   docker login ghcr.io                                         # if the package is private
+# Deploy / update:
+#   docker compose pull && docker compose up -d
+# Create a user:
+#   docker compose run --rm backend create-user --email ... --password ... --role admin
+
+name: gr-logistics
+
+x-backend: &backend
+    image: ghcr.io/wizzer129/gr-logistics-payroll-backend:${BACKEND_IMAGE_TAG:-latest}
+    env_file: backend.env
+    environment:
+        DATABASE_URL: postgres://gr_logistics:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/gr_logistics
+    restart: unless-stopped
+
+services:
+    db:
+        image: postgres:16-alpine
+        environment:
+            POSTGRES_USER: gr_logistics
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+            POSTGRES_DB: gr_logistics
+        volumes:
+            - db_data:/var/lib/postgresql/data
+        networks:
+            - internal
+        restart: unless-stopped
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -U gr_logistics -d gr_logistics']
+            interval: 5s
+            timeout: 5s
+            retries: 10
+
+    # One-shot: applies pending migrations, then exits. The backend waits for it to succeed.
+    migrate:
+        <<: *backend
+        command: ['migrate']
+        restart: 'no'
+        networks:
+            - internal
+        depends_on:
+            db:
+                condition: service_healthy
+
+    backend:
+        <<: *backend
+        networks:
+            internal:
+            proxy:
+                # Stable, project-specific name for the NPM proxy host — "backend" alone would
+                # be ambiguous on a network shared with other stacks.
+                aliases:
+                    - gr-logistics-backend
+        depends_on:
+            db:
+                condition: service_healthy
+            migrate:
+                condition: service_completed_successfully
+        # Uses the image's HEALTHCHECK (`gr-logistics healthcheck`).
+
+networks:
+    # No route out of this network and no published ports: Postgres is reachable only by
+    # migrate and backend.
+    internal:
+        internal: true
+    # Nginx Proxy Manager's network, created by its own stack (`docker network ls` to find it).
+    proxy:
+        external: true
+        name: ${NPM_NETWORK:-npm_default}
+
+volumes:
+    db_data:

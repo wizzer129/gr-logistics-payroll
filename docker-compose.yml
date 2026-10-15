@@ -27,8 +27,6 @@ services:
             PORT:
             SESSION_TTL_HOURS:
             CORS_ORIGIN:
-            ANTHROPIC_API_KEY:
-            ANTHROPIC_BASE_URL:
             LOG_LEVEL:
             LOG_FORMAT:
             DATABASE_URL: postgres://gr_logistics:dev_password@db:5432/gr_logistics
@@ -46,8 +44,6 @@ services:
             PORT:
             SESSION_TTL_HOURS:
             CORS_ORIGIN:
-            ANTHROPIC_API_KEY:
-            ANTHROPIC_BASE_URL:
             LOG_LEVEL:
             LOG_FORMAT:
             DATABASE_URL: postgres://gr_logistics:dev_password@db:5432/gr_logistics

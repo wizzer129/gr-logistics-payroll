@@ -20,11 +20,6 @@ pub enum AppError {
     NotFound(String),
     #[error("{0}")]
     Conflict(String),
-    #[error("{0}")]
-    PayloadTooLarge(String),
-    /// An upstream service (the Anthropic API) failed or returned something unusable.
-    #[error("{0}")]
-    BadGateway(String),
     #[error(transparent)]
     Internal(#[from] anyhow::Error),
 }
@@ -55,8 +50,6 @@ impl IntoResponse for AppError {
             Self::Forbidden(_) => StatusCode::FORBIDDEN,
             Self::NotFound(_) => StatusCode::NOT_FOUND,
             Self::Conflict(_) => StatusCode::CONFLICT,
-            Self::PayloadTooLarge(_) => StatusCode::PAYLOAD_TOO_LARGE,
-            Self::BadGateway(_) => StatusCode::BAD_GATEWAY,
             Self::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
 

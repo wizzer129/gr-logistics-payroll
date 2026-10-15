@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use axum::{
     Router,
-    extract::{DefaultBodyLimit, Request},
+    extract::Request,
     http::{Method, StatusCode, header},
     middleware,
     response::Response,
@@ -14,15 +14,11 @@ use tracing::Span;
 use crate::{
     auth,
     error::AppError,
-    handlers::{auth as auth_handlers, dashboard, employees, health, loads, paycheck_logs},
+    handlers::{auth as auth_handlers, dashboard, employees, health, paycheck_logs},
     state::AppState,
 };
 
-/// Phone screenshots routinely exceed axum's 2 MB default body limit.
-const SCREENSHOT_BODY_LIMIT: usize = 10 * 1024 * 1024;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
-/// Longer than the Claude API client's own 120 s timeout, so its clearer 502 wins.
-const EXTRACTION_TIMEOUT: Duration = Duration::from_secs(150);
 
 pub fn build_app(state: AppState) -> Router {
     let timeout =
@@ -64,19 +60,12 @@ pub fn build_app(state: AppState) -> Router {
         )
         .layer(timeout(REQUEST_TIMEOUT));
 
-    let extraction = Router::new()
-        .route("/api/loads/extract", post(loads::extract))
-        .layer(DefaultBodyLimit::max(SCREENSHOT_BODY_LIMIT))
-        .layer(timeout(EXTRACTION_TIMEOUT));
-
     // Everything here requires a session. Handlers also take `AuthUser` and check the role
     // explicitly, so a route accidentally added outside this router still can't skip auth.
-    let protected = data
-        .merge(extraction)
-        .route_layer(middleware::from_fn_with_state(
-            state.clone(),
-            auth::middleware::require_session,
-        ));
+    let protected = data.route_layer(middleware::from_fn_with_state(
+        state.clone(),
+        auth::middleware::require_session,
+    ));
 
     Router::new()
         .merge(public)

@@ -8,6 +8,4 @@ use crate::config::Config;
 pub struct AppState {
     pub pool: PgPool,
     pub config: Arc<Config>,
-    /// Shared client for the Anthropic API (connection pooling across requests).
-    pub http: reqwest::Client,
 }

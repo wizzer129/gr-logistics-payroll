@@ -64,7 +64,6 @@ async fn protected_routes_reject_without_session() {
         (Method::GET, format!("/api/paycheck-logs/{id}/loads")),
         (Method::GET, "/api/dashboard/summary".to_owned()),
         (Method::GET, format!("/api/dashboard/employee/{id}/summary")),
-        (Method::POST, "/api/loads/extract".to_owned()),
     ];
 
     for (method, uri) in routes {

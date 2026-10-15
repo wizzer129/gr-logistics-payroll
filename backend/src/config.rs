@@ -20,8 +20,6 @@ pub struct Config {
     pub database_url: String,
     pub session_ttl_hours: i64,
     pub cors_origin: HeaderValue,
-    pub anthropic_api_key: String,
-    pub anthropic_base_url: String,
     pub log_level: String,
     pub log_format: LogFormat,
 }
@@ -33,12 +31,11 @@ pub const REQUIRED_KEYS: &[&str] = &[
     "DATABASE_URL",
     "SESSION_TTL_HOURS",
     "CORS_ORIGIN",
-    "ANTHROPIC_API_KEY",
     "LOG_LEVEL",
 ];
 
 /// Read when present, with a default otherwise.
-pub const OPTIONAL_KEYS: &[&str] = &["ANTHROPIC_BASE_URL", "LOG_FORMAT"];
+pub const OPTIONAL_KEYS: &[&str] = &["LOG_FORMAT"];
 
 impl Config {
     /// Fails fast listing every missing key at once, like the TS `assertEnv()`.
@@ -74,9 +71,6 @@ impl Config {
             database_url: var("DATABASE_URL"),
             session_ttl_hours: var("SESSION_TTL_HOURS").parse()?,
             cors_origin: var("CORS_ORIGIN").parse()?,
-            anthropic_api_key: var("ANTHROPIC_API_KEY"),
-            anthropic_base_url: std::env::var("ANTHROPIC_BASE_URL")
-                .unwrap_or_else(|_| "https://api.anthropic.com".into()),
             log_level: var("LOG_LEVEL"),
             log_format,
         })

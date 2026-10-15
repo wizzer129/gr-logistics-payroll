@@ -280,6 +280,9 @@ Corrected/expanded from spec (naming cleaned up: `empoloyee_loads` → `employee
 
 ## 6. AI Load Extraction
 
+> **Removed (2026-10-14).** Built in the Rust backend (`POST /api/loads/extract`) but never
+> wired into the frontend, then dropped along with `ANTHROPIC_API_KEY`. Kept below as history.
+
 Flow: admin uploads a screenshot (e.g. a load-board or paystub screenshot) → backend sends image to **Claude** (Messages API, vision input) → model returns structured JSON `{ date, store_name, payment, extra_pay }` → frontend pre-fills the manual-entry form for the admin to confirm/correct before saving.
 
 Extracted data is always a **suggestion the admin must confirm**, not an auto-save, to avoid silent misreads of payment amounts. Needs an `ANTHROPIC_API_KEY` in backend env config (see [Environment Config](#9-environment-config--logging)).

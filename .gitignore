@@ -12,3 +12,4 @@ playwright-report/
 spreadsheets/
 target/
 csv/
+deploy/backend.env

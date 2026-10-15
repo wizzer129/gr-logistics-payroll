@@ -13,6 +13,5 @@ Backend (left over from the Rust rewrite):
     4. docker compose up -d backend, then check docker compose ps shows healthy and /api/health returns {"status":"ok"}
     5. Log in from the real frontend (existing sessions and passwords keep working)
        Rollback note: after 0008 (pay_rate_percent NOT NULL), the old Bun image can no longer create paycheck logs, so roll back to a pre-0008 Rust image instead.
-- Try screenshot extraction with a real ANTHROPIC_API_KEY (only tested against a mock Claude API so far).
 - Colored per-module log lines in pretty mode (TODO in backend/src/logging.rs).
 - Optional: auto-reload for `bun run dev` (cargo install bacon, then dev:backend -> "cd backend && bacon run").

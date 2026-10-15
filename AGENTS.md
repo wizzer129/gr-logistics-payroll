@@ -19,8 +19,8 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
       intentional, considered exception — not a regression to "fix" back to Bun natives.
 - **Backend: one crate per concern, already chosen.** HTTP = axum/tower/tower-http,
   Postgres = sqlx, validation = garde, money = rust_decimal, errors = thiserror, logging =
-  tracing, Claude API = reqwest (no official Rust SDK). Don't add a second crate that
-  duplicates one of these.
+  tracing, HTTP client = reqwest (only the `healthcheck` subcommand uses it). Don't add a
+  second crate that duplicates one of these.
 - **No ORM.** Schema lives as plain SQL in `backend/migrations/`, applied by
   `gr-logistics migrate` (files embedded in the binary, tracked in `schema_migrations`,
   under a Postgres advisory lock). **Never edit an applied migration** — add the next
@@ -37,8 +37,7 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
   JSON numbers, every error as `{ "error": string }` via `AppError`
   (`backend/src/error.rs`). Bad input is **400** — use the `ValidatedJson`, `IdPath` and
   `ApiQuery` extractors (`backend/src/extract/`), never the plain axum ones, whose
-  rejections are 422s / plain text. 401 no session, 403 wrong role, 404, 409 duplicate,
-  413 too large, 502 when the Claude API fails.
+  rejections are 422s / plain text. 401 no session, 403 wrong role, 404, 409 duplicate.
 - **E2E is Playwright**, not Cypress (the frontend started with Cypress — see
   `PROJECT_PLAN.md`'s history if you're wondering why `cypress.config.ts` isn't there — it
   was replaced). Cypress's config loader choked on this repo's ESM setup, and Playwright's
@@ -178,8 +177,7 @@ This project has no human reviewer gate beyond CI, so treat these as mandatory, 
 
 1. `cd backend && cargo fmt --check && cargo clippy --all-targets -- -D warnings`, then
    `bun run test:backend` from the root (needs Postgres: `docker compose up -d db`; tests
-   create throwaway databases and never touch the dev data). Tests never call the real
-   Claude API — mock it with wiremock as `tests/loads.rs` does.
+   create throwaway databases and never touch the dev data).
 2. `cd frontend && bun run build && bun run test` (build runs `vue-tsc` — it catches
    `.vue` type errors `tsc` alone cannot)
 3. `bun run lint` from the repo root (and `bunx prettier --write <changed files>` first —

@@ -18,8 +18,6 @@ pub fn test_config() -> Config {
         database_url: "postgres://unused@localhost/unused".into(),
         session_ttl_hours: 12,
         cors_origin: "http://localhost:5173".parse().unwrap(),
-        anthropic_api_key: "test".into(),
-        anthropic_base_url: "http://localhost:0".into(),
         log_level: "error".into(),
         log_format: LogFormat::Pretty,
     }
@@ -37,7 +35,6 @@ pub fn app_without_db() -> Router {
     build_app(AppState {
         pool,
         config: Arc::new(config),
-        http: reqwest::Client::new(),
     })
 }
 
@@ -54,7 +51,6 @@ pub async fn app_with_db_and_config(pool: sqlx::PgPool, config: Config) -> Route
     build_app(AppState {
         pool,
         config: Arc::new(config),
-        http: reqwest::Client::new(),
     })
 }
 
