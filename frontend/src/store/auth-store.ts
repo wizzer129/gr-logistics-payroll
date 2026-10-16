@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import { apiFetch } from '../utils/api';
+import { apiFetch, apiJson } from '../utils/api';
 
 export type User = { id: string; email: string; role: 'admin' | 'employee' };
 
@@ -34,20 +34,24 @@ export const useAuthStore = defineStore('auth', () => {
 	}
 
 	async function login(email: string, password: string): Promise<void> {
-		const response = await apiFetch('/api/auth/login', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ email, password }),
-		});
-
-		if (!response.ok) throw new Error('Invalid email or password');
-
-		setUser(await response.json());
+		setUser(
+			await apiJson<User>('/api/auth/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email, password }),
+			}),
+		);
 	}
 
+	/** Always logs out locally; a failed server call just leaves a session to expire. */
 	async function logout(): Promise<void> {
-		await apiFetch('/api/auth/logout', { method: 'POST' });
-		setUser(null);
+		try {
+			await apiFetch('/api/auth/logout', { method: 'POST' });
+		} catch {
+			// Offline: nothing to tell the server, and the user still wants out.
+		} finally {
+			setUser(null);
+		}
 	}
 
 	/**

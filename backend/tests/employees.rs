@@ -259,6 +259,7 @@ async fn unknown_and_malformed_ids(pool: PgPool) {
 	.await;
 	assert_eq!(update.status, 404);
 	assert_eq!(update.body["error"], "Employee not found");
+	assert_eq!(update.body["code"], "EMPLOYEE_NOT_FOUND");
 	assert_eq!(
 		send(&app, "DELETE", &missing, None, Some(&cookie))
 			.await
@@ -276,6 +277,7 @@ async fn unknown_and_malformed_ids(pool: PgPool) {
 	.await;
 	assert_eq!(malformed.status, 400);
 	assert_eq!(malformed.body["error"], "Invalid id");
+	assert_eq!(malformed.body["code"], "INVALID_ID");
 
 	let audit_count: i64 = sqlx::query_scalar("SELECT count(*) FROM audit_log")
 		.fetch_one(&pool)

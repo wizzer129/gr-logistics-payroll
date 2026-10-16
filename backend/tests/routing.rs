@@ -45,6 +45,27 @@ async fn unknown_route_is_404() {
 	);
 }
 
+#[tokio::test]
+async fn wrong_method_is_a_coded_405() {
+	let response = common::app_without_db()
+		.oneshot(
+			Request::builder()
+				.method(Method::PATCH)
+				.uri("/api/health")
+				.body(Body::empty())
+				.unwrap(),
+		)
+		.await
+		.unwrap();
+
+	assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+	let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+		.await
+		.unwrap();
+	let body: serde_json::Value = serde_json::from_slice(&body).unwrap();
+	assert_eq!(body["code"], "METHOD_NOT_ALLOWED");
+}
+
 /// Every data route requires a session — including the three GETs the Bun
 /// backend left open.
 #[tokio::test]

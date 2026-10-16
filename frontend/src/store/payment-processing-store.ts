@@ -2,7 +2,8 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { calculateEmployeeCut, DEFAULT_PAY_RATE_PERCENT } from '../utils/payment-calc';
 import { getWeekRange, toIsoDate } from '../utils/week';
-import { apiFetch } from '../utils/api';
+import { apiRequest } from '../utils/api';
+import { i18n } from '../plugins/i18n';
 
 export type Load = {
 	storeName: string;
@@ -55,9 +56,9 @@ export const usePaymentProcessingStore = defineStore('payment-processing', () =>
 
 	/** `complete` saves it as completed; otherwise it's saved as a draft. */
 	async function submit({ complete }: { complete: boolean }): Promise<void> {
-		if (!employeeId.value) throw new Error('No employee selected');
+		if (!employeeId.value) throw new Error(i18n.global.t('payment.noEmployee'));
 
-		const response = await apiFetch('/api/paycheck-logs', {
+		await apiRequest('/api/paycheck-logs', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
@@ -69,11 +70,6 @@ export const usePaymentProcessingStore = defineStore('payment-processing', () =>
 				complete,
 			}),
 		});
-
-		if (!response.ok) {
-			const body = await response.json().catch(() => null);
-			throw new Error(body?.error ?? `Failed to submit paycheck log (${response.status})`);
-		}
 	}
 
 	function reset(): void {

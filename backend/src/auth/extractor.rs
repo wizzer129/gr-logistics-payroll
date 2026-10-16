@@ -2,7 +2,7 @@ use axum::{extract::FromRequestParts, http::request::Parts};
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::error::AppError;
+use crate::error::{AppError, ErrorCode};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -42,7 +42,10 @@ impl AuthUser {
 		if roles.contains(&self.role) {
 			Ok(())
 		} else {
-			Err(AppError::Forbidden("Insufficient permissions".into()))
+			Err(AppError::Forbidden(
+				ErrorCode::Forbidden,
+				"Insufficient permissions".into(),
+			))
 		}
 	}
 }
@@ -53,10 +56,8 @@ impl<S: Send + Sync> FromRequestParts<S> for AuthUser {
 	type Rejection = AppError;
 
 	async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-		parts
-			.extensions
-			.get::<AuthUser>()
-			.cloned()
-			.ok_or_else(|| AppError::Unauthorized("Not authenticated".into()))
+		parts.extensions.get::<AuthUser>().cloned().ok_or_else(|| {
+			AppError::Unauthorized(ErrorCode::NotAuthenticated, "Not authenticated".into())
+		})
 	}
 }

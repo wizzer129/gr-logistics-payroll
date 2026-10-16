@@ -8,7 +8,8 @@
 		"password": "Password",
 		"logout": "Log Out",
 		"showPassword": "Show password",
-		"hidePassword": "Hide password"
+		"hidePassword": "Hide password",
+		"loginFailed": "Invalid email or password"
 	},
 	"nav": {
 		"dashboard": "Dashboard",
@@ -78,7 +79,17 @@
 		"status": "Status",
 		"editTitle": "Edit Paycheck",
 		"confirmDelete": "Delete this paycheck log? This cannot be undone.",
-		"saveFailed": "Couldn't save the paycheck."
+		"weekStart": "Week Start",
+		"weekEnd": "Week End",
+		"noEmployee": "No employee selected",
+		"statuses": {
+			"draft": "Draft",
+			"completed": "Completed"
+		},
+		"updated": "Paycheck saved",
+		"completed": "Paycheck completed",
+		"deleted": "Paycheck deleted",
+		"confirmDeleteTitle": "Delete paycheck?"
 	},
 	"paystub": {
 		"title": "Pay Stub",
@@ -110,7 +121,11 @@
 		"lastName": "Last Name",
 		"payRatePercent": "Pay Rate %",
 		"payRateHint": "Changes apply to new paychecks only — existing ones keep their rate.",
-		"saveFailed": "Couldn't save the employee."
+		"created": "Employee added",
+		"updated": "Employee updated",
+		"deleted": "Employee deleted",
+		"confirmDeleteTitle": "Delete employee?",
+		"confirmDelete": "{name} will be removed from the employee list. Their payment history is kept."
 	},
 	"common": {
 		"edit": "Edit",
@@ -119,10 +134,39 @@
 		"cancel": "Cancel",
 		"actions": "Actions",
 		"allEmployees": "All Employees",
-		"close": "Close"
+		"close": "Close",
+		"from": "From",
+		"to": "To",
+		"search": "Search",
+		"confirm": "Confirm"
 	},
 	"pagination": {
 		"pageSize": "Page size",
 		"range": "{start}–{end} of {total}"
+	},
+	"errors": {
+		"INVALID_BODY": "The request was malformed.",
+		"VALIDATION_FAILED": "Some fields are invalid.",
+		"INVALID_QUERY": "Invalid search filters.",
+		"INVALID_ID": "Invalid record id.",
+		"INVALID_YEAR": "Invalid year.",
+		"LOADS_AND_LUMP_SUM": "Send either loads or a lump sum, not both.",
+		"NO_LOADS": "Add at least one load, or enter a lump sum.",
+		"WEEK_END_BEFORE_START": "The week end can't be before the week start.",
+		"TOTAL_TOO_LARGE": "The total pay is too large.",
+		"KIND_MISMATCH": "A paycheck can't be switched between loads and a lump sum.",
+		"NOT_AUTHENTICATED": "Please log in.",
+		"SESSION_EXPIRED": "Your session expired. Please log in again.",
+		"INVALID_CREDENTIALS": "Invalid email or password.",
+		"FORBIDDEN": "You don't have permission to do that.",
+		"NOT_FOUND": "Not found.",
+		"EMPLOYEE_NOT_FOUND": "Employee not found.",
+		"PAYCHECK_LOG_NOT_FOUND": "Paycheck log not found.",
+		"DUPLICATE_WEEK": "This employee already has a paycheck for that week.",
+		"INTERNAL_ERROR": "Something went wrong on the server.",
+		"UNKNOWN": "Unexpected server response.",
+		"NETWORK_ERROR": "Couldn't reach the server. Check your connection.",
+		"METHOD_NOT_ALLOWED": "That action isn't supported.",
+		"REQUEST_TIMEOUT": "The server took too long to respond. Try again."
 	}
 }

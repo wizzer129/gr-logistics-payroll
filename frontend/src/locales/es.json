@@ -8,7 +8,8 @@
 		"password": "Contraseña",
 		"logout": "Cerrar Sesión",
 		"showPassword": "Mostrar contraseña",
-		"hidePassword": "Ocultar contraseña"
+		"hidePassword": "Ocultar contraseña",
+		"loginFailed": "Correo electrónico o contraseña incorrectos"
 	},
 	"nav": {
 		"dashboard": "Panel",
@@ -78,7 +79,17 @@
 		"status": "Estado",
 		"editTitle": "Editar Pago",
 		"confirmDelete": "¿Eliminar este registro de pago? Esta acción no se puede deshacer.",
-		"saveFailed": "No se pudo guardar el pago."
+		"weekStart": "Inicio de Semana",
+		"weekEnd": "Cierre de Semana",
+		"noEmployee": "No se seleccionó ningún empleado",
+		"statuses": {
+			"draft": "Borrador",
+			"completed": "Completado"
+		},
+		"updated": "Pago guardado",
+		"completed": "Pago completado",
+		"deleted": "Pago eliminado",
+		"confirmDeleteTitle": "¿Eliminar pago?"
 	},
 	"paystub": {
 		"title": "Talón de Pago",
@@ -110,7 +121,11 @@
 		"lastName": "Apellido",
 		"payRatePercent": "Porcentaje de Pago %",
 		"payRateHint": "Los cambios aplican solo a pagos nuevos; los existentes conservan su tarifa.",
-		"saveFailed": "No se pudo guardar el empleado."
+		"created": "Empleado agregado",
+		"updated": "Empleado actualizado",
+		"deleted": "Empleado eliminado",
+		"confirmDeleteTitle": "¿Eliminar empleado?",
+		"confirmDelete": "{name} se quitará de la lista de empleados. Su historial de pagos se conserva."
 	},
 	"common": {
 		"edit": "Editar",
@@ -119,10 +134,39 @@
 		"cancel": "Cancelar",
 		"actions": "Acciones",
 		"allEmployees": "Todos los Empleados",
-		"close": "Cerrar"
+		"close": "Cerrar",
+		"from": "Desde",
+		"to": "Hasta",
+		"search": "Buscar",
+		"confirm": "Confirmar"
 	},
 	"pagination": {
 		"pageSize": "Por página",
 		"range": "{start}–{end} de {total}"
+	},
+	"errors": {
+		"INVALID_BODY": "La solicitud no es válida.",
+		"VALIDATION_FAILED": "Algunos campos no son válidos.",
+		"INVALID_QUERY": "Filtros de búsqueda no válidos.",
+		"INVALID_ID": "Identificador de registro no válido.",
+		"INVALID_YEAR": "Año no válido.",
+		"LOADS_AND_LUMP_SUM": "Envíe cargas o un pago global, no ambos.",
+		"NO_LOADS": "Agregue al menos una carga o ingrese un pago global.",
+		"WEEK_END_BEFORE_START": "El cierre de semana no puede ser antes del inicio.",
+		"TOTAL_TOO_LARGE": "El pago total es demasiado alto.",
+		"KIND_MISMATCH": "Un pago no se puede cambiar entre cargas y pago global.",
+		"NOT_AUTHENTICATED": "Inicie sesión.",
+		"SESSION_EXPIRED": "Su sesión expiró. Inicie sesión de nuevo.",
+		"INVALID_CREDENTIALS": "Correo electrónico o contraseña incorrectos.",
+		"FORBIDDEN": "No tiene permiso para hacer eso.",
+		"NOT_FOUND": "No encontrado.",
+		"EMPLOYEE_NOT_FOUND": "Empleado no encontrado.",
+		"PAYCHECK_LOG_NOT_FOUND": "Registro de pago no encontrado.",
+		"DUPLICATE_WEEK": "Este empleado ya tiene un pago para esa semana.",
+		"INTERNAL_ERROR": "Ocurrió un error en el servidor.",
+		"UNKNOWN": "Respuesta inesperada del servidor.",
+		"NETWORK_ERROR": "No se pudo conectar con el servidor. Revise su conexión.",
+		"METHOD_NOT_ALLOWED": "Esa acción no está disponible.",
+		"REQUEST_TIMEOUT": "El servidor tardó demasiado en responder. Intente de nuevo."
 	}
 }

@@ -2,7 +2,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { formatMonthDay } from '../../utils/week';
-import { apiFetch } from '../../utils/api';
+import { useToastStore } from '../../store/toast-store';
+import { apiJson } from '../../utils/api';
 
 type HistoryRow = {
 	id: string;
@@ -20,14 +21,15 @@ const { t, locale } = useI18n();
 const emit = defineEmits<{ collapse: [] }>();
 const rows = ref<HistoryRow[]>([]);
 const loading = ref(false);
+const toast = useToastStore();
 
 async function refresh(): Promise<void> {
 	loading.value = true;
 	try {
-		const response = await apiFetch('/api/paycheck-logs');
-		if (!response.ok) return;
-		const logs: HistoryRow[] = await response.json();
+		const logs = await apiJson<HistoryRow[]>('/api/paycheck-logs');
 		rows.value = logs.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, MAX_ROWS);
+	} catch (error) {
+		toast.fromError(error);
 	} finally {
 		loading.value = false;
 	}

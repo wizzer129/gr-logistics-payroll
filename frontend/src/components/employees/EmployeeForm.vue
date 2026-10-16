@@ -21,11 +21,17 @@ const form = reactive<EmployeeInput>({
 
 function onSubmit(): void {
 	emit('save', { ...form });
+}
+
+/** Called by the parent once the save succeeded, so a failed save keeps what was typed. */
+function reset(): void {
 	form.firstName = '';
 	form.lastName = '';
 	form.email = '';
 	form.payRatePercent = 42;
 }
+
+defineExpose({ reset });
 </script>
 
 <template>
@@ -42,6 +48,6 @@ function onSubmit(): void {
 			max="100"
 			step="0.5"
 		/>
-		<v-btn type="submit" color="primary">{{ t('employees.add') }}</v-btn>
+		<v-btn type="submit" color="primary" block>{{ t('employees.add') }}</v-btn>
 	</v-form>
 </template>

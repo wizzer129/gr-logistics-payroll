@@ -40,7 +40,7 @@ async fn wrong_password_and_unknown_email_get_the_same_401(pool: PgPool) {
 		assert_eq!(response.status, 401, "{body}");
 		assert_eq!(
 			response.body,
-			json!({ "error": "Invalid email or password" })
+			json!({ "error": "Invalid email or password", "code": "INVALID_CREDENTIALS" })
 		);
 	}
 }
@@ -61,6 +61,12 @@ async fn invalid_login_bodies_are_400(pool: PgPool) {
 		assert_eq!(response.status, 400, "{body}");
 		assert!(
 			response.body["error"].is_string(),
+			"{body}: {:?}",
+			response.body
+		);
+		assert!(
+			["INVALID_BODY", "VALIDATION_FAILED"]
+				.contains(&response.body["code"].as_str().unwrap()),
 			"{body}: {:?}",
 			response.body
 		);

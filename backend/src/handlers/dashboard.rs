@@ -5,7 +5,7 @@ use chrono::{Datelike, Months, NaiveDate, Utc};
 
 use crate::{
 	auth::{AuthUser, Role},
-	error::{AppError, AppResult},
+	error::{AppError, AppResult, ErrorCode},
 	extract::{ApiQuery, IdPath},
 	models::dashboard::{DashboardSummary, EmployeeSummary, YearQuery},
 	services::dashboard,
@@ -16,7 +16,10 @@ fn resolve_year(query: &YearQuery) -> AppResult<i32> {
 	match query.year {
 		None => Ok(Utc::now().year()),
 		Some(year) if (2000..=2100).contains(&year) => Ok(year),
-		Some(_) => Err(AppError::BadRequest("Invalid year".into())),
+		Some(_) => Err(AppError::BadRequest(
+			ErrorCode::InvalidYear,
+			"Invalid year".into(),
+		)),
 	}
 }
 
@@ -51,7 +54,9 @@ pub async fn employee_summary(
 
 	let employee = dashboard::employee_name(&state.pool, employee_id)
 		.await?
-		.ok_or_else(|| AppError::NotFound("Employee not found".into()))?;
+		.ok_or_else(|| {
+			AppError::NotFound(ErrorCode::EmployeeNotFound, "Employee not found".into())
+		})?;
 
 	let year_start = NaiveDate::from_ymd_opt(year, 1, 1).expect("year is validated");
 	let month_start = Utc::now()

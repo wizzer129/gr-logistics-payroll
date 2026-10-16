@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDisplay } from 'vuetify';
 import { usePaymentProcessingStore, type Load } from '../store/payment-processing-store';
+import { useToastStore } from '../store/toast-store';
 import { parseLocalDate } from '../utils/week';
 import { useEmployees, type EmployeeOption } from '../composables/useEmployees';
 import { matchEmployeeByName, type ParsedLoadsCsv } from '../utils/csv-loads';
@@ -72,11 +73,7 @@ function onCsvCleared(): void {
 
 // Which button is saving, so only that one shows a spinner.
 const processing = ref<'draft' | 'complete' | null>(null);
-const toast = ref<{ show: boolean; text: string; color: string }>({
-	show: false,
-	text: '',
-	color: 'success',
-});
+const toast = useToastStore();
 // Bumped to remount the entry card, which drops the uploaded CSV and the manual form.
 const entryCardKey = ref(0);
 const history = ref<InstanceType<typeof PaymentHistory> | null>(null);
@@ -96,21 +93,13 @@ async function onSubmit(complete: boolean): Promise<void> {
 	try {
 		await store.submit({ complete });
 	} catch (e) {
-		toast.value = {
-			show: true,
-			text: t('payment.processFailed', { error: (e as Error).message }),
-			color: 'error',
-		};
+		toast.error(t('payment.processFailed', { error: (e as Error).message }));
 		return;
 	} finally {
 		processing.value = null;
 	}
 
-	toast.value = {
-		show: true,
-		text: t(complete ? 'payment.processed' : 'payment.draftSaved'),
-		color: 'success',
-	};
+	toast.success(t(complete ? 'payment.processed' : 'payment.draftSaved'));
 	store.reset();
 	csvEmployeeNotFound.value = null;
 	entryCardKey.value++;
@@ -256,10 +245,6 @@ const paystubData = computed<PaystubData>(() => ({
 				@click="historyCollapsed = false"
 			/>
 		</template>
-
-		<v-snackbar v-model="toast.show" :color="toast.color" location="top right" timeout="4000">
-			{{ toast.text }}
-		</v-snackbar>
 	</v-container>
 </template>
 

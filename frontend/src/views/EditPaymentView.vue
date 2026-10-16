@@ -10,7 +10,9 @@ import LoadForm from '../components/payment-processing/LoadForm.vue';
 import LoadList from '../components/payment-processing/LoadList.vue';
 import PaystubPrinter from '../components/payment-processing/PaystubPrinter.vue';
 import type { PaystubData } from '../components/payment-processing/Paystub.vue';
-import { apiFetch } from '../utils/api';
+import { useConfirmStore } from '../store/confirm-store';
+import { useToastStore } from '../store/toast-store';
+import { ApiError, apiJson, apiRequest } from '../utils/api';
 
 type PaycheckLogRow = {
 	id: string;
@@ -18,7 +20,7 @@ type PaycheckLogRow = {
 	weekStart: string;
 	weekEnd: string;
 	payday: string;
-	status: string;
+	status: 'draft' | 'completed';
 	/** `loads` or `lump_sum` (no loads, paid in full). */
 	kind: 'loads' | 'lump_sum';
 	summaryTotal: number;
@@ -30,6 +32,8 @@ type PaycheckLogRow = {
 };
 
 const { t, locale } = useI18n();
+const toast = useToastStore();
+const confirmDialog = useConfirmStore();
 const { employees, loadEmployees } = useEmployees();
 
 const employeeId = ref<string | null>(null);
@@ -77,10 +81,11 @@ async function search(): Promise<void> {
 	if (to.value) params.set('to', to.value);
 
 	// Backend already orders week_start DESC — latest to oldest by default.
-	const response = await apiFetch(`/api/paycheck-logs?${params}`);
-	if (response.ok) {
-		results.value = await response.json();
+	try {
+		results.value = await apiJson<PaycheckLogRow[]>(`/api/paycheck-logs?${params}`);
 		page.value = 1;
+	} catch (error) {
+		toast.fromError(error);
 	}
 }
 
@@ -135,8 +140,13 @@ async function openEdit(log: PaycheckLogRow): Promise<void> {
 	if (editIsLumpSum.value) {
 		editLoads.value = [];
 	} else {
-		const response = await apiFetch(`/api/paycheck-logs/${log.id}/loads`);
-		editLoads.value = response.ok ? await response.json() : [];
+		// Without its loads the dialog would show (and could save) an empty paycheck.
+		try {
+			editLoads.value = await apiJson<Load[]>(`/api/paycheck-logs/${log.id}/loads`);
+		} catch (error) {
+			toast.fromError(error);
+			return;
+		}
 	}
 	recalcEdit();
 	editDialog.value = true;
@@ -157,24 +167,28 @@ async function saveEdit(complete = false): Promise<void> {
 	if (!editingLog.value) return;
 	editError.value = null;
 
-	const response = await apiFetch(`/api/paycheck-logs/${editingLog.value.id}`, {
-		method: 'PUT',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({
-			weekStart: editForm.weekStart,
-			weekEnd: editForm.weekEnd,
-			payday: editForm.payday,
-			...(editIsLumpSum.value ? { lumpSum: editLumpSum.value } : { loads: editLoads.value }),
-			complete,
-		}),
-	});
-
-	if (!response.ok) {
-		const body = await response.json().catch(() => null);
-		editError.value = body?.error ?? t('payment.saveFailed');
+	try {
+		await apiRequest(`/api/paycheck-logs/${editingLog.value.id}`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				weekStart: editForm.weekStart,
+				weekEnd: editForm.weekEnd,
+				payday: editForm.payday,
+				...(editIsLumpSum.value
+					? { lumpSum: editLumpSum.value }
+					: { loads: editLoads.value }),
+				complete,
+			}),
+		});
+	} catch (error) {
+		// Shown in the dialog, which stays open so the edit isn't lost.
+		if (!(error instanceof ApiError)) throw error;
+		editError.value = error.message;
 		return;
 	}
 	editDialog.value = false;
+	toast.success(t(complete ? 'payment.completed' : 'payment.updated'));
 	await search();
 }
 
@@ -208,13 +222,22 @@ function cancelEdit(): void {
 }
 
 async function onDelete(log: PaycheckLogRow): Promise<void> {
-	if (!confirm(t('payment.confirmDelete'))) return;
-
-	const response = await apiFetch(`/api/paycheck-logs/${log.id}`, {
-		method: 'DELETE',
+	const confirmed = await confirmDialog.confirm({
+		title: t('payment.confirmDeleteTitle'),
+		text: t('payment.confirmDelete'),
+		confirmText: t('common.delete'),
+		color: 'error',
 	});
+	if (!confirmed) return;
 
-	if (response.ok) results.value = results.value.filter((r) => r.id !== log.id);
+	try {
+		await apiRequest(`/api/paycheck-logs/${log.id}`, { method: 'DELETE' });
+	} catch (error) {
+		toast.fromError(error);
+		return;
+	}
+	results.value = results.value.filter((r) => r.id !== log.id);
+	toast.success(t('payment.deleted'));
 }
 </script>
 
@@ -235,13 +258,13 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 				/>
 			</v-col>
 			<v-col cols="12" md="3">
-				<v-text-field v-model="from" label="From" type="date" />
+				<v-text-field v-model="from" :label="t('common.from')" type="date" />
 			</v-col>
 			<v-col cols="12" md="3">
-				<v-text-field v-model="to" label="To" type="date" />
+				<v-text-field v-model="to" :label="t('common.to')" type="date" />
 			</v-col>
 			<v-col cols="12" md="2" class="d-flex align-center">
-				<v-btn color="primary" @click="search">Search</v-btn>
+				<v-btn block color="primary" @click="search">{{ t('common.search') }}</v-btn>
 			</v-col>
 		</v-row>
 
@@ -249,8 +272,8 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 			<thead>
 				<tr>
 					<th>{{ t('employees.firstName') }} {{ t('employees.lastName') }}</th>
-					<th>Week Start</th>
-					<th>Week End</th>
+					<th>{{ t('payment.weekStart') }}</th>
+					<th>{{ t('payment.weekEnd') }}</th>
 					<th>{{ t('payment.payday') }}</th>
 					<th>{{ t('payment.status') }}</th>
 					<th class="text-right">{{ t('payment.totalPay') }}</th>
@@ -264,7 +287,7 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 					<td>{{ formatMonthDay(log.weekEnd, locale) }}</td>
 					<td>{{ formatMonthDay(log.payday, locale) }}</td>
 					<td>
-						{{ log.status }}
+						{{ t(`payment.statuses.${log.status}`) }}
 						<v-chip
 							v-if="log.kind === 'lump_sum'"
 							size="x-small"
@@ -326,12 +349,16 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 						<v-col cols="12" md="4">
 							<v-text-field
 								v-model="editForm.weekStart"
-								label="Week Start"
+								:label="t('payment.weekStart')"
 								type="date"
 							/>
 						</v-col>
 						<v-col cols="12" md="4">
-							<v-text-field v-model="editForm.weekEnd" label="Week End" type="date" />
+							<v-text-field
+								v-model="editForm.weekEnd"
+								:label="t('payment.weekEnd')"
+								type="date"
+							/>
 						</v-col>
 						<v-col cols="12" md="4">
 							<v-text-field

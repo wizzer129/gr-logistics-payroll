@@ -194,6 +194,7 @@ async fn unknown_employee_is_404_and_duplicate_week_is_409(pool: PgPool) {
 	let response = ctx.req("POST", "/api/paycheck-logs", Some(&missing)).await;
 	assert_eq!(response.status, 404);
 	assert_eq!(response.body["error"], "Employee not found");
+	assert_eq!(response.body["code"], "EMPLOYEE_NOT_FOUND");
 
 	let employee = ctx.employee(json!(42)).await;
 	let body = log_body(&employee, "2026-10-04", one_load(json!(100)));
@@ -207,6 +208,7 @@ async fn unknown_employee_is_404_and_duplicate_week_is_409(pool: PgPool) {
 	// Bun returned 500 here (UNIQUE (employee_id, week_start)).
 	let duplicate = ctx.req("POST", "/api/paycheck-logs", Some(&body)).await;
 	assert_eq!(duplicate.status, 409, "{:?}", duplicate.body);
+	assert_eq!(duplicate.body["code"], "DUPLICATE_WEEK");
 	assert_eq!(
 		ctx.count("SELECT count(*) FROM employee_paycheck_logs")
 			.await,
@@ -466,7 +468,10 @@ async fn a_failure_partway_rolls_back_everything(pool: PgPool) {
 		.await;
 
 	assert_eq!(response.status, 500);
-	assert_eq!(response.body, json!({ "error": "Internal server error" }));
+	assert_eq!(
+		response.body,
+		json!({ "error": "Internal server error", "code": "INTERNAL_ERROR" })
+	);
 	assert_eq!(
 		ctx.count("SELECT count(*) FROM employee_paycheck_logs")
 			.await,

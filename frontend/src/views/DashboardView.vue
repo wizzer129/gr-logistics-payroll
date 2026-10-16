@@ -5,7 +5,8 @@ import { useEmployees } from '../composables/useEmployees';
 import { formatCurrency } from '../utils/currency';
 import PaymentsByEmployeeChart from '../components/dashboard/PaymentsByEmployeeChart.vue';
 import PaymentsOverTimeChart from '../components/dashboard/PaymentsOverTimeChart.vue';
-import { apiFetch } from '../utils/api';
+import { useToastStore } from '../store/toast-store';
+import { apiJson } from '../utils/api';
 
 type DashboardSummary = {
 	year: number;
@@ -37,14 +38,25 @@ const summary = ref<DashboardSummary | null>(null);
 const selectedEmployeeId = ref<string | null>(null);
 const employeeSummary = ref<EmployeeSummary | null>(null);
 
+const toast = useToastStore();
+
 async function loadSummary(): Promise<void> {
-	const response = await apiFetch('/api/dashboard/summary');
-	if (response.ok) summary.value = await response.json();
+	try {
+		summary.value = await apiJson<DashboardSummary>('/api/dashboard/summary');
+	} catch (error) {
+		toast.fromError(error);
+	}
 }
 
 async function loadEmployeeSummary(employeeId: string): Promise<void> {
-	const response = await apiFetch(`/api/dashboard/employee/${employeeId}/summary`);
-	employeeSummary.value = response.ok ? await response.json() : null;
+	try {
+		employeeSummary.value = await apiJson<EmployeeSummary>(
+			`/api/dashboard/employee/${employeeId}/summary`,
+		);
+	} catch (error) {
+		employeeSummary.value = null;
+		toast.fromError(error);
+	}
 }
 
 watch(selectedEmployeeId, (employeeId) => {

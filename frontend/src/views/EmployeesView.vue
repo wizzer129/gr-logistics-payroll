@@ -4,27 +4,58 @@ import { useI18n } from 'vue-i18n';
 import EmployeeForm, { type EmployeeInput } from '../components/employees/EmployeeForm.vue';
 import EmployeeList, { type Employee } from '../components/employees/EmployeeList.vue';
 import EmployeeEditDialog from '../components/employees/EmployeeEditDialog.vue';
-import { apiFetch } from '../utils/api';
+import { useConfirmStore } from '../store/confirm-store';
+import { useToastStore } from '../store/toast-store';
+import { ApiError, apiJson, apiRequest } from '../utils/api';
 
 const { t } = useI18n();
+const toast = useToastStore();
+const confirmDialog = useConfirmStore();
 const employees = ref<Employee[]>([]);
+const form = ref<InstanceType<typeof EmployeeForm> | null>(null);
 
 async function loadEmployees(): Promise<void> {
-	const response = await apiFetch('/api/employees');
-	if (response.ok) employees.value = await response.json();
+	try {
+		employees.value = await apiJson<Employee[]>('/api/employees');
+	} catch (error) {
+		toast.fromError(error);
+	}
 }
 
 async function onSave(input: EmployeeInput): Promise<void> {
-	await apiFetch('/api/employees', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(input),
-	});
+	try {
+		await apiRequest('/api/employees', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(input),
+		});
+	} catch (error) {
+		toast.fromError(error);
+		return;
+	}
+	form.value?.reset();
+	toast.success(t('employees.created'));
 	await loadEmployees();
 }
 
 async function onDelete(employee: Employee): Promise<void> {
-	await apiFetch(`/api/employees/${employee.id}`, { method: 'DELETE' });
+	const confirmed = await confirmDialog.confirm({
+		title: t('employees.confirmDeleteTitle'),
+		text: t('employees.confirmDelete', {
+			name: `${employee.firstName} ${employee.lastName}`,
+		}),
+		confirmText: t('common.delete'),
+		color: 'error',
+	});
+	if (!confirmed) return;
+
+	try {
+		await apiRequest(`/api/employees/${employee.id}`, { method: 'DELETE' });
+	} catch (error) {
+		toast.fromError(error);
+		return;
+	}
+	toast.success(t('employees.deleted'));
 	await loadEmployees();
 }
 
@@ -43,18 +74,18 @@ async function onEditSave(id: string, input: EmployeeInput): Promise<void> {
 	editSaving.value = true;
 	editError.value = null;
 	try {
-		const response = await apiFetch(`/api/employees/${id}`, {
+		await apiRequest(`/api/employees/${id}`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(input),
 		});
-		if (!response.ok) {
-			const body = await response.json().catch(() => null);
-			editError.value = body?.error ?? t('employees.saveFailed');
-			return;
-		}
 		editOpen.value = false;
+		toast.success(t('employees.updated'));
 		await loadEmployees();
+	} catch (error) {
+		// Shown in the dialog, which stays open so the edit isn't lost.
+		if (!(error instanceof ApiError)) throw error;
+		editError.value = error.message;
 	} finally {
 		editSaving.value = false;
 	}
@@ -69,7 +100,7 @@ onMounted(loadEmployees);
 
 		<v-row>
 			<v-col cols="12" md="4">
-				<EmployeeForm @save="onSave" />
+				<EmployeeForm ref="form" @save="onSave" />
 			</v-col>
 			<v-col cols="12" md="8">
 				<EmployeeList :employees="employees" @edit="onEdit" @delete="onDelete" />

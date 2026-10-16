@@ -5,7 +5,7 @@ use serde_json::json;
 
 use crate::{
 	auth::{AuthUser, Role},
-	error::{AppError, AppResult},
+	error::{AppError, AppResult, ErrorCode},
 	extract::{IdPath, ValidatedJson},
 	models::employee::{CreateEmployee, Employee, UpdateEmployee},
 	services::{
@@ -18,7 +18,7 @@ use crate::{
 const ENTITY: &str = "employee";
 
 fn not_found() -> AppError {
-	AppError::NotFound("Employee not found".into())
+	AppError::NotFound(ErrorCode::EmployeeNotFound, "Employee not found".into())
 }
 
 pub async fn list(user: AuthUser, State(state): State<AppState>) -> AppResult<Json<Vec<Employee>>> {

@@ -34,10 +34,16 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
   number's exact text — a JSON string is rejected, more than 2 decimal places is a 400.
 - **API contract** (the frontend depends on all of it): camelCase keys
   (`#[serde(rename_all = "camelCase")]` on every DTO), dates as `"YYYY-MM-DD"`, money as
-  JSON numbers, every error as `{ "error": string }` via `AppError`
+  JSON numbers, every error as `{ "error": string, "code": string }` via `AppError`
   (`backend/src/error.rs`). Bad input is **400** — use the `ValidatedJson`, `IdPath` and
   `ApiQuery` extractors (`backend/src/extract/`), never the plain axum ones, whose
   rejections are 422s / plain text. 401 no session, 403 wrong role, 404, 409 duplicate.
+- **Errors carry a stable `code`**: `{ "error": "Employee not found", "code":
+"EMPLOYEE_NOT_FOUND" }`. `error` is English for developers/logs; the frontend translates
+  `code` via `errors.<CODE>` in its locale files and shows it in brackets for
+  troubleshooting (`apiError()` in `frontend/src/utils/api.ts`). Every new `AppError` takes
+  an `ErrorCode` variant — add one with its `en`/`es` translations
+  (`frontend/unit-tests/api-error.test.ts` fails otherwise); never rename an existing one.
 - **E2E is Playwright**, not Cypress (the frontend started with Cypress — see
   `PROJECT_PLAN.md`'s history if you're wondering why `cypress.config.ts` isn't there — it
   was replaced). Cypress's config loader choked on this repo's ESM setup, and Playwright's
@@ -134,6 +140,18 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
 - Dark/light theme is handled by Vuetify's theme system with `localStorage` persistence
   (`frontend/src/plugins/vuetify.ts`: `currentTheme()`/`setTheme()`/`toggleTheme()`) —
   reuse those helpers rather than touching `vuetify.theme.global` directly elsewhere.
+- **Toasts go through `useToastStore()`** (`frontend/src/store/toast-store.ts`:
+  `success`/`error`/`info`/`warning`, or `show(text, color, timeout)`). App.vue's single
+  `<v-snackbar-queue>` shows them one at a time, 3s each by default, user-dismissible.
+  Don't add a page-level `<v-snackbar>`.
+- **Confirmations go through `useConfirmStore().confirm({ title, text, confirmText?, color? })`**
+  (`frontend/src/store/confirm-store.ts`), which resolves `true`/`false`; App.vue renders the
+  one `<ConfirmDialog>`. Never `window.confirm()` — it can't be translated or themed.
+- **API calls never fail silently.** Use `apiJson`/`apiRequest` (`frontend/src/utils/api.ts`,
+  which throw a translated `ApiError` for non-2xx _and_ network failures) and
+  `catch (error) { toast.fromError(error) }`; writes also `toast.success(...)`. A dialog
+  shows the error inline instead (it stays open so input isn't lost). Plain `apiFetch` is
+  only for calls where a failure status is expected (logout, the boot-time `/auth/me`).
 - Global Vuetify component defaults are set once in `plugins/vuetify.ts`
   (`VTextField` → `outlined`, `VSelect`/`VAutocomplete`/`VCombobox` → `solo-filled`).
   Don't set `variant` on individual component instances unless intentionally overriding

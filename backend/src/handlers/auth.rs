@@ -3,7 +3,7 @@ use axum_extra::extract::CookieJar;
 
 use crate::{
 	auth::{AuthUser, Role, password, session},
-	error::{AppError, AppResult},
+	error::{AppError, AppResult, ErrorCode},
 	extract::ValidatedJson,
 	models::auth::LoginRequest,
 	state::AppState,
@@ -25,16 +25,22 @@ pub async fn login(
 
 	let Some((id, email, role, password_hash)) = row else {
 		password::burn_verify_time(body.password).await;
-		return Err(AppError::Unauthorized(INVALID_CREDENTIALS.into()));
+		return Err(AppError::Unauthorized(
+			ErrorCode::InvalidCredentials,
+			INVALID_CREDENTIALS.into(),
+		));
 	};
 
 	if !password::verify_password(body.password, password_hash).await? {
-		return Err(AppError::Unauthorized(INVALID_CREDENTIALS.into()));
+		return Err(AppError::Unauthorized(
+			ErrorCode::InvalidCredentials,
+			INVALID_CREDENTIALS.into(),
+		));
 	}
 
 	let role = Role::parse(&role).ok_or_else(|| {
 		tracing::warn!(%id, role, "login for user with unknown role");
-		AppError::Unauthorized(INVALID_CREDENTIALS.into())
+		AppError::Unauthorized(ErrorCode::InvalidCredentials, INVALID_CREDENTIALS.into())
 	})?;
 
 	let (session_id, expires_at) =

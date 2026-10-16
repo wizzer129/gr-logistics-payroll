@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../store/auth-store';
+import { ApiError } from '../utils/api';
 import ThemeToggle from '../components/layout/ThemeToggle.vue';
 
 const { t } = useI18n();
@@ -22,8 +23,9 @@ async function onSubmit(): Promise<void> {
 	try {
 		await auth.login(email.value, password.value);
 		await router.push({ name: 'dashboard' });
-	} catch {
-		error.value = t('auth.login') + ' failed';
+	} catch (e) {
+		// A non-API failure (offline, CORS) has an untranslated browser message.
+		error.value = e instanceof ApiError ? e.message : t('auth.loginFailed');
 	} finally {
 		loading.value = false;
 	}

@@ -4,7 +4,7 @@ use axum::{
 };
 use uuid::Uuid;
 
-use crate::error::AppError;
+use crate::error::{AppError, ErrorCode};
 
 /// A `/{id}` path segment that must be a UUID. A malformed one is a 400 with the usual
 /// `{ "error" }` body (plain `Path<Uuid>` replies in plain text).
@@ -16,7 +16,7 @@ impl<S: Send + Sync> FromRequestParts<S> for IdPath {
 	async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
 		let Path(id) = Path::<Uuid>::from_request_parts(parts, state)
 			.await
-			.map_err(|_| AppError::BadRequest("Invalid id".into()))?;
+			.map_err(|_| AppError::BadRequest(ErrorCode::InvalidId, "Invalid id".into()))?;
 		Ok(Self(id))
 	}
 }

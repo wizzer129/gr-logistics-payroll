@@ -1,5 +1,6 @@
 import { ref } from 'vue';
-import { apiFetch } from '../utils/api';
+import { useToastStore } from '../store/toast-store';
+import { apiJson } from '../utils/api';
 
 export type EmployeeOption = {
 	id: string;
@@ -10,10 +11,14 @@ export type EmployeeOption = {
 
 export function useEmployees() {
 	const employees = ref<EmployeeOption[]>([]);
+	const toast = useToastStore();
 
 	async function loadEmployees(): Promise<void> {
-		const response = await apiFetch('/api/employees');
-		if (response.ok) employees.value = await response.json();
+		try {
+			employees.value = await apiJson<EmployeeOption[]>('/api/employees');
+		} catch (error) {
+			toast.fromError(error);
+		}
 	}
 
 	return { employees, loadEmployees };

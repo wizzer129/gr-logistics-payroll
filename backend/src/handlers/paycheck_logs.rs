@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::{
 	auth::{AuthUser, Role},
 	domain::payment_calc::{calculate_employee_cut, sum_loads},
-	error::{AppError, AppResult},
+	error::{AppError, AppResult, ErrorCode},
 	extract::{ApiQuery, IdPath, ValidatedJson},
 	models::{
 		load::{Load, LoadInput},
@@ -33,7 +33,10 @@ const DUPLICATE_WEEK: &str = "A paycheck log already exists for this employee an
 const MAX_TOTAL: Decimal = dec!(99999999.99);
 
 fn not_found() -> AppError {
-	AppError::NotFound("Paycheck log not found".into())
+	AppError::NotFound(
+		ErrorCode::PaycheckLogNotFound,
+		"Paycheck log not found".into(),
+	)
 }
 
 const KIND_LOADS: &str = "loads";
@@ -51,9 +54,11 @@ impl<'a> Payment<'a> {
 			(Some(amount), true) => Ok(Self::LumpSum(amount)),
 			(None, false) => Ok(Self::Loads(loads)),
 			(Some(_), false) => Err(AppError::BadRequest(
+				ErrorCode::LoadsAndLumpSum,
 				"Send either loads or lumpSum, not both".into(),
 			)),
 			(None, true) => Err(AppError::BadRequest(
+				ErrorCode::NoLoads,
 				"loads: must have at least one load (or send lumpSum)".into(),
 			)),
 		}
@@ -86,6 +91,7 @@ fn log_fields(
 ) -> AppResult<LogFields> {
 	if week_end < week_start {
 		return Err(AppError::BadRequest(
+			ErrorCode::WeekEndBeforeStart,
 			"weekEnd must not be before weekStart".into(),
 		));
 	}
@@ -95,7 +101,10 @@ fn log_fields(
 			let amounts: Vec<_> = loads.iter().map(LoadInput::amounts).collect();
 			let summary_total = sum_loads(&amounts);
 			if summary_total > MAX_TOTAL {
-				return Err(AppError::BadRequest("Total pay is too large".into()));
+				return Err(AppError::BadRequest(
+					ErrorCode::TotalTooLarge,
+					"Total pay is too large".into(),
+				));
 			}
 			let cut = calculate_employee_cut(summary_total, pay_rate_percent).rounded_pay;
 			(summary_total, cut, pay_rate_percent)
@@ -150,7 +159,9 @@ pub async fn create(
 
 	let pay_rate = paycheck_logs::employee_pay_rate(&mut tx, body.employee_id)
 		.await?
-		.ok_or_else(|| AppError::NotFound("Employee not found".into()))?;
+		.ok_or_else(|| {
+			AppError::NotFound(ErrorCode::EmployeeNotFound, "Employee not found".into())
+		})?;
 	let fields = log_fields(
 		body.week_start,
 		body.week_end,
@@ -162,7 +173,7 @@ pub async fn create(
 	let status = if body.complete { "completed" } else { "draft" };
 	let log = paycheck_logs::insert(&mut tx, body.employee_id, &fields, status, user.id)
 		.await
-		.map_err(|e| AppError::conflict_if_unique(e, DUPLICATE_WEEK))?;
+		.map_err(|e| AppError::conflict_if_unique(e, ErrorCode::DuplicateWeek, DUPLICATE_WEEK))?;
 	paycheck_logs::replace_loads(&mut tx, log.id, body.employee_id, payment.loads(), user.id)
 		.await?;
 	// A draft's create diff stays `{}`; created-as-completed records the status, like
@@ -196,10 +207,13 @@ pub async fn update(
 		.await?
 		.ok_or_else(not_found)?;
 	if kind != payment.kind() {
-		return Err(AppError::BadRequest(format!(
-			"This paycheck log is {kind}; it can't be edited into {}",
-			payment.kind()
-		)));
+		return Err(AppError::BadRequest(
+			ErrorCode::KindMismatch,
+			format!(
+				"This paycheck log is {kind}; it can't be edited into {}",
+				payment.kind()
+			),
+		));
 	}
 	let fields = log_fields(
 		body.week_start,
@@ -211,7 +225,7 @@ pub async fn update(
 
 	let log = paycheck_logs::update(&mut tx, id, &fields, body.complete, user.id)
 		.await
-		.map_err(|e| AppError::conflict_if_unique(e, DUPLICATE_WEEK))?;
+		.map_err(|e| AppError::conflict_if_unique(e, ErrorCode::DuplicateWeek, DUPLICATE_WEEK))?;
 	paycheck_logs::replace_loads(&mut tx, id, employee_id, payment.loads(), user.id).await?;
 
 	let diff = serde_json::to_value(&body).map_err(anyhow::Error::from)?;

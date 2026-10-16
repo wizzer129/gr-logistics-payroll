@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Line } from 'vue-chartjs';
+import { useI18n } from 'vue-i18n';
 import {
 	CategoryScale,
 	Chart as ChartJS,
@@ -27,11 +28,12 @@ const props = defineProps<{
 	}[];
 }>();
 
+const { locale } = useI18n();
 const colors = useChartColors();
 
 function formatPeriod(period: string): string {
 	const [year, month] = period.split('-').map(Number);
-	return new Intl.DateTimeFormat(undefined, { month: 'short' }).format(
+	return new Intl.DateTimeFormat(locale.value, { month: 'short' }).format(
 		new Date(year, month - 1, 1),
 	);
 }
