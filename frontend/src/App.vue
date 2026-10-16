@@ -10,7 +10,8 @@ const toast = useToastStore();
 
 <template>
 	<v-app>
-		<NavBar v-if="auth.isAuthenticated" />
+		<!-- Admins only: every page in it needs the admin role (others get /no-access). -->
+		<NavBar v-if="auth.isAdmin" />
 
 		<v-main>
 			<router-view />

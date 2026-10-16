@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { Load } from '../../store/payment-processing-store';
 
@@ -9,14 +9,20 @@ const { buttonVariant = 'elevated' } = defineProps<{
 }>();
 const emit = defineEmits<{ 'add-load': [load: Load] }>();
 
-const form = reactive<Load>({ storeName: '', loadDate: '', pay: 0, extraPay: 0 });
+const EMPTY: Required<Load> = { storeName: '', loadDate: '', pay: 0, extraPay: 0 };
+
+const form = reactive<Load>({ ...EMPTY });
+
+// A load typed in but not yet added with the button.
+const isDirty = computed(() =>
+	(Object.keys(EMPTY) as (keyof Load)[]).some((key) => form[key] !== EMPTY[key]),
+);
+
+defineExpose({ isDirty });
 
 function onSubmit(): void {
 	emit('add-load', { ...form });
-	form.storeName = '';
-	form.loadDate = '';
-	form.pay = 0;
-	form.extraPay = 0;
+	Object.assign(form, EMPTY);
 }
 </script>
 

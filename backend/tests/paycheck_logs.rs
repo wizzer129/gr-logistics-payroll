@@ -581,8 +581,9 @@ async fn migration_backfills_existing_logs_with_the_employees_rate(pool: PgPool)
     .unwrap();
 
 	let applied = gr_logistics::cli::migrate::apply(&mut conn).await.unwrap();
+	// Only the start matters: later migrations (unrelated to pay rates) run after these.
 	assert_eq!(
-		applied,
+		applied[..3],
 		[
 			"0007_paycheck_log_pay_rate.sql",
 			"0008_paycheck_log_pay_rate_not_null.sql",

@@ -2,7 +2,10 @@ use axum::{extract::FromRequestParts, http::request::Parts};
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::error::{AppError, ErrorCode};
+use crate::{
+	email::Locale,
+	error::{AppError, ErrorCode},
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -34,6 +37,8 @@ pub struct AuthUser {
 	pub id: Uuid,
 	pub email: String,
 	pub role: Role,
+	/// The language their emails go out in, kept in step with the UI (EMAIL-SPEC.md §6).
+	pub locale: Locale,
 }
 
 impl AuthUser {

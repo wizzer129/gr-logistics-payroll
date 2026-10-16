@@ -1,8 +1,13 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import { apiFetch, apiJson } from '../utils/api';
+import { apiFetch, apiJson, apiRequest } from '../utils/api';
+import { localeRef } from '../plugins/i18n';
+import { useToastStore } from './toast-store';
 
-export type User = { id: string; email: string; role: 'admin' | 'employee' };
+export type Locale = 'en' | 'es';
+
+/** `locale` is the language their emails go out in; kept in step with the UI's. */
+export type User = { id: string; email: string; role: 'admin' | 'employee'; locale: Locale };
 
 const STORAGE_KEY = 'gr-logistics-user';
 
@@ -41,6 +46,25 @@ export const useAuthStore = defineStore('auth', () => {
 				body: JSON.stringify({ email, password }),
 			}),
 		);
+		await saveLocale(localeRef().value as Locale);
+	}
+
+	/**
+	 * Saves the UI language as the user's email language (EMAIL-SPEC.md §6). Called on
+	 * login, on boot and whenever they switch language, so emails follow what they use.
+	 */
+	async function saveLocale(locale: Locale): Promise<void> {
+		if (!user.value || user.value.locale === locale) return;
+		try {
+			await apiRequest('/api/auth/me/locale', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ locale }),
+			});
+			setUser({ ...user.value, locale });
+		} catch (error) {
+			useToastStore().fromError(error);
+		}
 	}
 
 	/** Always logs out locally; a failed server call just leaves a session to expire. */
@@ -65,12 +89,16 @@ export const useAuthStore = defineStore('auth', () => {
 		try {
 			const response = await apiFetch('/api/auth/me');
 
-			if (response.ok) setUser(await response.json());
-			else setUser(null);
+			if (response.ok) {
+				setUser(await response.json());
+				await saveLocale(localeRef().value as Locale);
+			} else {
+				setUser(null);
+			}
 		} catch {
 			// Network error on boot — keep the cached user rather than bouncing to login.
 		}
 	}
 
-	return { user, isAuthenticated, isAdmin, login, logout, restoreSession };
+	return { user, isAuthenticated, isAdmin, login, logout, restoreSession, saveLocale };
 });

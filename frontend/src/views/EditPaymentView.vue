@@ -11,6 +11,7 @@ import LoadList from '../components/payment-processing/LoadList.vue';
 import PaystubPrinter from '../components/payment-processing/PaystubPrinter.vue';
 import type { PaystubData } from '../components/payment-processing/Paystub.vue';
 import { useConfirmStore } from '../store/confirm-store';
+import { useUnsavedChanges } from '../composables/useUnsavedChanges';
 import { useToastStore } from '../store/toast-store';
 import { ApiError, apiJson, apiRequest } from '../utils/api';
 
@@ -34,6 +35,7 @@ type PaycheckLogRow = {
 const { t, locale } = useI18n();
 const toast = useToastStore();
 const confirmDialog = useConfirmStore();
+const { confirmDiscard, guardLeave } = useUnsavedChanges();
 const { employees, loadEmployees } = useEmployees();
 
 const employeeId = ref<string | null>(null);
@@ -149,7 +151,27 @@ async function openEdit(log: PaycheckLogRow): Promise<void> {
 		}
 	}
 	recalcEdit();
+	editSnapshot.value = editState();
 	editDialog.value = true;
+}
+
+// What the dialog edits, serialized: dirty means it differs from when the dialog opened.
+const editSnapshot = ref('');
+function editState(): string {
+	return JSON.stringify([editForm, editLoads.value, editLumpSum.value]);
+}
+const editLoadForm = ref<InstanceType<typeof LoadForm> | null>(null);
+const editIsDirty = computed(
+	() =>
+		editDialog.value &&
+		(editState() !== editSnapshot.value || Boolean(editLoadForm.value?.isDirty)),
+);
+
+guardLeave(() => editIsDirty.value);
+
+// Cancel, Escape and clicking outside all come through here.
+async function requestCloseEdit(): Promise<void> {
+	if (await confirmDiscard(() => editIsDirty.value)) cancelEdit();
 }
 
 function onEditAddLoad(load: Load): void {
@@ -339,7 +361,13 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 			/>
 		</div>
 
-		<v-dialog v-model="editDialog" max-width="900">
+		<v-dialog
+			:model-value="editDialog"
+			max-width="900"
+			@update:model-value="
+				(value: boolean) => (value ? (editDialog = true) : requestCloseEdit())
+			"
+		>
 			<v-card :title="t('payment.editTitle')">
 				<v-card-text>
 					<v-alert v-if="editError" type="error" density="compact" class="mb-4">{{
@@ -385,7 +413,11 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 						<v-col v-else cols="12" md="6">
 							<v-card :title="t('payment.addManualLoad')">
 								<v-card-text>
-									<LoadForm button-variant="outlined" @add-load="onEditAddLoad" />
+									<LoadForm
+										ref="editLoadForm"
+										button-variant="outlined"
+										@add-load="onEditAddLoad"
+									/>
 								</v-card-text>
 							</v-card>
 						</v-col>
@@ -422,7 +454,9 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 						t('payment.printPaystub')
 					}}</v-btn>
 					<v-spacer />
-					<v-btn variant="outlined" @click="cancelEdit">{{ t('common.cancel') }}</v-btn>
+					<v-btn variant="outlined" @click="requestCloseEdit">{{
+						t('common.cancel')
+					}}</v-btn>
 					<v-btn variant="outlined" color="primary" @click="saveEdit()">{{
 						t('common.save')
 					}}</v-btn>

@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '../store/auth-store';
 import { ApiError } from '../utils/api';
 import ThemeToggle from '../components/layout/ThemeToggle.vue';
+import PasswordField from '../components/common/PasswordField.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -12,7 +13,6 @@ const auth = useAuthStore();
 
 const email = ref('');
 const password = ref('');
-const showPassword = ref(false);
 const error = ref('');
 const loading = ref(false);
 
@@ -39,25 +39,12 @@ async function onSubmit(): Promise<void> {
 			<v-form @submit.prevent="onSubmit">
 				<v-card-text>
 					<v-text-field v-model="email" :label="t('auth.email')" type="email" required />
-					<v-text-field
+					<PasswordField
 						v-model="password"
 						:label="t('auth.password')"
-						:type="showPassword ? 'text' : 'password'"
+						autocomplete="current-password"
 						required
-					>
-						<template #append-inner>
-							<v-btn
-								:icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
-								:aria-label="
-									t(showPassword ? 'auth.hidePassword' : 'auth.showPassword')
-								"
-								variant="text"
-								density="compact"
-								size="small"
-								@click="showPassword = !showPassword"
-							/>
-						</template>
-					</v-text-field>
+					/>
 					<v-alert v-if="error" type="error" density="compact" class="mb-2">{{
 						error
 					}}</v-alert>
@@ -73,6 +60,11 @@ async function onSubmit(): Promise<void> {
 						>{{ t('auth.login') }}</v-btn
 					>
 				</v-card-actions>
+				<div class="text-center">
+					<router-link :to="{ name: 'forgot-password' }" class="text-body-2">{{
+						t('auth.forgotPassword')
+					}}</router-link>
+				</div>
 			</v-form>
 		</v-card>
 	</v-container>

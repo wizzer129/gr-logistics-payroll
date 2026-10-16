@@ -4,6 +4,7 @@
 pub mod extractor;
 pub mod middleware;
 pub mod password;
+pub mod reset_token;
 pub mod session;
 
 pub use extractor::{AuthUser, Role};

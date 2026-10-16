@@ -7,6 +7,7 @@ export type Employee = {
 	lastName: string;
 	email?: string;
 	payRatePercent: number;
+	locale: 'en' | 'es';
 };
 
 const { t } = useI18n();

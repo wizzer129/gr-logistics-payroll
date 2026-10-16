@@ -3,6 +3,9 @@
 
 pub mod audit;
 pub mod dashboard;
+pub mod email_outbox;
+pub mod email_recipients;
 pub mod employees;
+pub mod password_resets;
 pub mod paycheck_logs;
 pub mod stores;

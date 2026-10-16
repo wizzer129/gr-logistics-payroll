@@ -14,7 +14,7 @@ use tracing::Span;
 use crate::{
 	auth,
 	error::{AppError, ErrorCode},
-	handlers::{auth as auth_handlers, dashboard, employees, health, paycheck_logs},
+	handlers::{auth as auth_handlers, dashboard, email, employees, health, paycheck_logs},
 	state::AppState,
 };
 
@@ -24,11 +24,20 @@ pub fn build_app(state: AppState) -> Router {
 	let public = Router::new()
 		.route("/api/auth/login", post(auth_handlers::login))
 		.route("/api/auth/logout", post(auth_handlers::logout))
+		.route(
+			"/api/auth/password-reset",
+			post(auth_handlers::request_password_reset),
+		)
+		.route(
+			"/api/auth/password-reset/confirm",
+			post(auth_handlers::confirm_password_reset),
+		)
 		.route("/api/health", get(health::health))
 		.layer(middleware::from_fn(timeout));
 
 	let data = Router::new()
 		.route("/api/auth/me", get(auth_handlers::me))
+		.route("/api/auth/me/locale", put(auth_handlers::update_locale))
 		.route(
 			"/api/employees",
 			get(employees::list).post(employees::create),
@@ -51,6 +60,14 @@ pub fn build_app(state: AppState) -> Router {
 		)
 		.route("/api/paycheck-logs/{id}/loads", get(paycheck_logs::loads))
 		.route("/api/dashboard/summary", get(dashboard::summary))
+		.route(
+			"/api/email/recipient-options",
+			get(email::recipient_options),
+		)
+		.route(
+			"/api/email/monthly-report/recipients",
+			get(email::monthly_report_recipients).put(email::set_monthly_report_recipients),
+		)
 		.route(
 			"/api/dashboard/employee/{id}/summary",
 			get(dashboard::employee_summary),

@@ -1,18 +1,27 @@
 //! `gr-logistics create-user` — upserts on email, so it also resets a password.
 
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 use sqlx::{Connection, PgConnection};
 use uuid::Uuid;
 
 use crate::{
 	auth::{Role, password},
 	config::Config,
+	models::auth::{PASSWORD_MAX_CHARS, PASSWORD_MIN_CHARS},
 };
 
 pub async fn run(config: &Config, email: &str, password: &str, role: &str) -> anyhow::Result<()> {
 	// An unknown role would lock the user out (sessions reject roles this build doesn't know).
 	let role = Role::parse(role)
 		.ok_or_else(|| anyhow!("unknown role {role:?}; expected \"admin\" or \"employee\""))?;
+
+	// Same rule as a password reset (models/auth.rs).
+	let chars = password.chars().count();
+	if !(PASSWORD_MIN_CHARS..=PASSWORD_MAX_CHARS).contains(&chars) {
+		bail!(
+			"password must be {PASSWORD_MIN_CHARS}–{PASSWORD_MAX_CHARS} characters (got {chars})"
+		);
+	}
 
 	let password_hash = password::hash_password(password.to_owned()).await?;
 

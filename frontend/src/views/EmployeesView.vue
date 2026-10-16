@@ -5,6 +5,7 @@ import EmployeeForm, { type EmployeeInput } from '../components/employees/Employ
 import EmployeeList, { type Employee } from '../components/employees/EmployeeList.vue';
 import EmployeeEditDialog from '../components/employees/EmployeeEditDialog.vue';
 import { useConfirmStore } from '../store/confirm-store';
+import { useUnsavedChanges } from '../composables/useUnsavedChanges';
 import { useToastStore } from '../store/toast-store';
 import { ApiError, apiJson, apiRequest } from '../utils/api';
 
@@ -13,6 +14,11 @@ const toast = useToastStore();
 const confirmDialog = useConfirmStore();
 const employees = ref<Employee[]>([]);
 const form = ref<InstanceType<typeof EmployeeForm> | null>(null);
+const editDialog = ref<InstanceType<typeof EmployeeEditDialog> | null>(null);
+
+useUnsavedChanges().guardLeave(
+	() => Boolean(form.value?.isDirty) || Boolean(editDialog.value?.isDirty),
+);
 
 async function loadEmployees(): Promise<void> {
 	try {
@@ -108,6 +114,7 @@ onMounted(loadEmployees);
 		</v-row>
 
 		<EmployeeEditDialog
+			ref="editDialog"
 			v-model="editOpen"
 			:employee="editing"
 			:saving="editSaving"

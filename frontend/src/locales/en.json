@@ -9,7 +9,22 @@
 		"logout": "Log Out",
 		"showPassword": "Show password",
 		"hidePassword": "Hide password",
-		"loginFailed": "Invalid email or password"
+		"loginFailed": "Invalid email or password",
+		"forgotPassword": "Forgot password?",
+		"forgotTitle": "Reset your password",
+		"forgotIntro": "Enter your account's email and we'll send you a link to choose a new password.",
+		"sendLink": "Send reset link",
+		"linkSent": "If that email has an account, we've sent a link to it. The link expires in 1 hour.",
+		"backToLogin": "Back to log in",
+		"resetTitle": "Choose a new password",
+		"newPassword": "New password",
+		"confirmPassword": "Confirm new password",
+		"savePassword": "Save new password",
+		"passwordLength": "Use 12 to 128 characters.",
+		"passwordsDontMatch": "The passwords don't match.",
+		"passwordReset": "Password updated. Log in with your new password.",
+		"linkInvalid": "This reset link is invalid, already used, or expired.",
+		"requestNewLink": "Request a new link"
 	},
 	"nav": {
 		"dashboard": "Dashboard",
@@ -17,7 +32,8 @@
 		"editPayment": "Edit Payment",
 		"employees": "Employees",
 		"openMenu": "Open navigation menu",
-		"toggleTheme": "Toggle dark mode"
+		"toggleTheme": "Toggle dark mode",
+		"settings": "Settings"
 	},
 	"dashboard": {
 		"ytdSummary": "Year-to-Date Summary",
@@ -125,7 +141,9 @@
 		"updated": "Employee updated",
 		"deleted": "Employee deleted",
 		"confirmDeleteTitle": "Delete employee?",
-		"confirmDelete": "{name} will be removed from the employee list. Their payment history is kept."
+		"confirmDelete": "{name} will be removed from the employee list. Their payment history is kept.",
+		"language": "Email language",
+		"languageHint": "Paystubs emailed to this employee are written in this language."
 	},
 	"common": {
 		"edit": "Edit",
@@ -138,7 +156,11 @@
 		"from": "From",
 		"to": "To",
 		"search": "Search",
-		"confirm": "Confirm"
+		"confirm": "Confirm",
+		"languages": {
+			"en": "English",
+			"es": "Español"
+		}
 	},
 	"pagination": {
 		"pageSize": "Page size",
@@ -167,6 +189,27 @@
 		"UNKNOWN": "Unexpected server response.",
 		"NETWORK_ERROR": "Couldn't reach the server. Check your connection.",
 		"METHOD_NOT_ALLOWED": "That action isn't supported.",
-		"REQUEST_TIMEOUT": "The server took too long to respond. Try again."
+		"REQUEST_TIMEOUT": "The server took too long to respond. Try again.",
+		"RESET_TOKEN_INVALID": "This reset link is invalid, already used, or expired.",
+		"RECIPIENT_NOT_FOUND": "One of the chosen recipients can't receive email anymore. Reload and try again."
+	},
+	"unsaved": {
+		"title": "Discard unsaved changes?",
+		"text": "You have changes that haven't been saved. If you leave now, they'll be lost.",
+		"discard": "Discard"
+	},
+	"recipients": {
+		"user": "User",
+		"employee": "Employee"
+	},
+	"settings": {
+		"monthlyTitle": "Monthly report",
+		"monthlyHint": "On the 1st of each month, these users get the previous month's payroll report by email. Only users can receive it, since it shows everyone's pay.",
+		"monthlyRecipients": "Send the monthly report to",
+		"monthlySaved": "Monthly report recipients saved"
+	},
+	"noAccess": {
+		"title": "No access",
+		"body": "Your account can receive emails from GR Logistics, but it doesn't have access to the app."
 	}
 }

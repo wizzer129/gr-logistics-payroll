@@ -1,0 +1,20 @@
+{
+	"common": {
+		"footer": "GR Logistics · Este mensaje se envió automáticamente. No responda a este correo."
+	},
+	"test_email": {
+		"subject": "Correo de prueba de GR Logistics",
+		"heading": "El correo funciona",
+		"body": "Si está leyendo esto, el servidor de GR Logistics puede enviar correos.",
+		"sent_at": "Enviado el"
+	},
+	"password_reset": {
+		"subject": "Restablezca su contraseña de GR Logistics",
+		"heading": "Restablecer su contraseña",
+		"body": "Alguien (esperamos que usted) pidió restablecer la contraseña de esta cuenta. Use el botón de abajo para elegir una nueva.",
+		"button": "Elegir una nueva contraseña",
+		"expires": "Este enlace funciona una sola vez y vence en 1 hora.",
+		"fallback": "Si el botón no funciona, copie este enlace en su navegador:",
+		"ignore": "Si usted no lo pidió, puede ignorar este correo. Su contraseña no cambiará."
+	}
+}

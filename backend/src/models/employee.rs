@@ -4,7 +4,7 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::{blank_as_none, money};
+use super::{blank_as_none, money, optional_locale};
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -18,6 +18,8 @@ pub struct Employee {
 	pub active: bool,
 	#[serde(with = "money::number")]
 	pub pay_rate_percent: Decimal,
+	/// `en` or `es`: the language their emails (e.g. paystubs) go out in.
+	pub locale: String,
 }
 
 /// `Serialize` (skipping absent fields) is what gets written to `audit_log.diff`.
@@ -53,6 +55,10 @@ pub struct CreateEmployee {
 	)]
 	#[garde(custom(money::pay_rate))]
 	pub pay_rate_percent: Option<Decimal>,
+	/// Defaults to `en` when omitted.
+	#[serde(default, skip_serializing_if = "Option::is_none")]
+	#[garde(custom(optional_locale))]
+	pub locale: Option<String>,
 }
 
 /// Partial update: an omitted field keeps its current value (`COALESCE`; a field can't be
@@ -90,4 +96,7 @@ pub struct UpdateEmployee {
 	)]
 	#[garde(custom(money::pay_rate))]
 	pub pay_rate_percent: Option<Decimal>,
+	#[serde(default, skip_serializing_if = "Option::is_none")]
+	#[garde(custom(optional_locale))]
+	pub locale: Option<String>,
 }

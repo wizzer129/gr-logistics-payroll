@@ -18,6 +18,16 @@ jobs:
             # Backend lint/format (clippy, cargo fmt) run in backend-test, which has Rust.
             - run: bun run lint:frontend
             - run: bun run format:check:frontend
+            # The backend embeds the Maizzle build output, which is committed; fail if it's
+            # stale or missing (status, not diff, so new untracked files count too).
+            - run: bun run emails:build
+            - run: |
+                  stale=$(git status --porcelain backend/templates/email)
+                  if [ -n "$stale" ]; then
+                      echo "$stale"
+                      echo "::error::Email templates are out of date: run 'bun run emails:build' and commit backend/templates/email"
+                      exit 1
+                  fi
 
     backend-test:
         runs-on: ubuntu-latest

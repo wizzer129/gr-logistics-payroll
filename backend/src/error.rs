@@ -25,6 +25,8 @@ pub enum ErrorCode {
 	WeekEndBeforeStart,
 	TotalTooLarge,
 	KindMismatch,
+	ResetTokenInvalid,
+	RecipientNotFound,
 	// 401 / 403
 	NotAuthenticated,
 	SessionExpired,

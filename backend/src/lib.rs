@@ -2,6 +2,7 @@ pub mod auth;
 pub mod cli;
 pub mod config;
 pub mod domain;
+pub mod email;
 pub mod error;
 pub mod extract;
 pub mod handlers;
@@ -14,11 +15,22 @@ pub mod state;
 use std::{sync::Arc, time::Duration};
 
 use sqlx::postgres::PgPoolOptions;
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, sync::watch};
 
 pub use routes::build_app;
 
-use crate::{config::Config, state::AppState};
+use crate::{
+	config::Config,
+	email::{outbox::Outbox, render::Renderer, sender},
+	state::AppState,
+};
+
+/// reqwest and sqlx both use rustls with the `ring` backend; reqwest needs it installed as
+/// the process default (`rustls-no-provider`, to avoid compiling a second backend). Safe to
+/// call more than once.
+pub fn install_tls_provider() {
+	let _ = rustls::crypto::ring::default_provider().install_default();
+}
 
 pub async fn serve(config: Config) -> anyhow::Result<()> {
 	let pool = PgPoolOptions::new()
@@ -28,18 +40,32 @@ pub async fn serve(config: Config) -> anyhow::Result<()> {
 		.await?;
 
 	let port = config.port;
+	let outbox = Outbox::new(
+		pool.clone(),
+		sender::from_config(&config.email),
+		Arc::new(Renderer::new()),
+	);
 	let state = AppState {
 		pool,
 		config: Arc::new(config),
 	};
 
+	// One signal stops both: the HTTP server drains in-flight requests, and the outbox
+	// worker finishes the send it's on.
+	let (shutdown_tx, shutdown_rx) = watch::channel(false);
+	let worker = tokio::spawn(outbox.run(shutdown_rx));
+
 	let listener = TcpListener::bind(("0.0.0.0", port)).await?;
 	tracing::info!(port, "backend listening");
 
 	axum::serve(listener, build_app(state))
-		.with_graceful_shutdown(shutdown_signal())
+		.with_graceful_shutdown(async move {
+			shutdown_signal().await;
+			let _ = shutdown_tx.send(true);
+		})
 		.await?;
 
+	worker.await?;
 	Ok(())
 }
 

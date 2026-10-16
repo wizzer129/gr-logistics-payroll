@@ -26,6 +26,9 @@ const lumpSumInput = computed({
 });
 
 const tab = ref<'upload' | 'manual' | 'lumpSum'>('upload');
+
+const loadForm = ref<InstanceType<typeof LoadForm> | null>(null);
+defineExpose({ isDirty: computed(() => Boolean(loadForm.value?.isDirty)) });
 // The open tab decides what gets paid: the Lump Sum tab pays the lump sum, the other two
 // pay the loads.
 watch(tab, (value) => {
@@ -51,7 +54,7 @@ watch(tab, (value) => {
 						/>
 					</v-window-item>
 					<v-window-item value="manual">
-						<LoadForm @add-load="emit('add-load', $event)" />
+						<LoadForm ref="loadForm" @add-load="emit('add-load', $event)" />
 					</v-window-item>
 					<v-window-item value="lumpSum">
 						<v-text-field

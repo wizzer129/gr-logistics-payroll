@@ -1,0 +1,20 @@
+{
+	"common": {
+		"footer": "GR Logistics · This message was sent automatically. Please don't reply to it."
+	},
+	"test_email": {
+		"subject": "GR Logistics test email",
+		"heading": "Email is working",
+		"body": "If you're reading this, the GR Logistics server can send email.",
+		"sent_at": "Sent at"
+	},
+	"password_reset": {
+		"subject": "Reset your GR Logistics password",
+		"heading": "Reset your password",
+		"body": "Someone (hopefully you) asked to reset the password for this account. Use the button below to choose a new one.",
+		"button": "Choose a new password",
+		"expires": "This link works once and expires in 1 hour.",
+		"fallback": "If the button doesn't work, copy this link into your browser:",
+		"ignore": "If you didn't ask for this, you can ignore this email. Your password won't change."
+	}
+}

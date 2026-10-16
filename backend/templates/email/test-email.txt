@@ -1,0 +1,12 @@
+
+
+GR Logistics
+
+{{ t.test_email.heading }}
+
+{{ t.test_email.body }}
+
+{{ t.test_email.sent_at }} {{ sent_at }}
+
+{{ t.common.footer }}
+

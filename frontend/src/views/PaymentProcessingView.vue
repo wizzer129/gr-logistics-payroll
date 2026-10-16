@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useDisplay } from 'vuetify';
 import { usePaymentProcessingStore, type Load } from '../store/payment-processing-store';
 import { useToastStore } from '../store/toast-store';
+import { useUnsavedChanges } from '../composables/useUnsavedChanges';
 import { parseLocalDate } from '../utils/week';
 import { useEmployees, type EmployeeOption } from '../composables/useEmployees';
 import { matchEmployeeByName, type ParsedLoadsCsv } from '../utils/csv-loads';
@@ -52,6 +53,14 @@ function onRemoveLoad(index: number): void {
 }
 
 const csvEmployeeNotFound = ref<string | null>(null);
+const entryCard = ref<InstanceType<typeof LoadEntryCard> | null>(null);
+
+// Loads or a lump sum entered but not yet saved. The store outlives this view, so leaving
+// anyway clears it — otherwise the "lost" work would reappear on the next visit.
+useUnsavedChanges().guardLeave(
+	() => store.loads.length > 0 || store.lumpSum > 0 || Boolean(entryCard.value?.isDirty),
+	() => store.reset(),
+);
 
 // A CSV is one employee's whole week: it replaces the current loads, sets the employee,
 // week and payday from the file. Totals and the cut are computed here, not read from it.
@@ -180,6 +189,7 @@ const paystubData = computed<PaystubData>(() => ({
 			<v-col cols="12" md="6">
 				<LoadEntryCard
 					:key="entryCardKey"
+					ref="entryCard"
 					v-model:mode="store.mode"
 					v-model:lump-sum="store.lumpSum"
 					:pay-rate-percent="store.payRatePercent"

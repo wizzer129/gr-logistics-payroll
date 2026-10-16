@@ -33,5 +33,7 @@ export default defineConfig({
 		environment: 'happy-dom',
 		include: ['unit-tests/**/*.test.ts'],
 		setupFiles: ['unit-tests/setup.ts'],
+		// Vuetify's components import their own .css; inlining lets Vite handle those.
+		server: { deps: { inline: ['vuetify'] } },
 	},
 });

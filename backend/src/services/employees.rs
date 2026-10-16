@@ -11,7 +11,7 @@ use crate::{
 
 macro_rules! columns {
 	() => {
-		"id, first_name, last_name, dob, email, address, active, pay_rate_percent"
+		"id, first_name, last_name, dob, email, address, active, pay_rate_percent, locale"
 	};
 }
 
@@ -32,8 +32,8 @@ pub async fn create(
 ) -> Result<Employee, sqlx::Error> {
 	sqlx::query_as(concat!(
         "INSERT INTO employees
-            (first_name, last_name, dob, email, address, pay_rate_percent, created_by, last_edited_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
+            (first_name, last_name, dob, email, address, pay_rate_percent, locale, created_by, last_edited_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
          RETURNING ",
         columns!()
     ))
@@ -43,6 +43,7 @@ pub async fn create(
     .bind(&input.email)
     .bind(&input.address)
     .bind(input.pay_rate_percent.unwrap_or(DEFAULT_PAY_RATE_PERCENT))
+    .bind(input.locale.as_deref().unwrap_or("en"))
     .bind(user_id)
     .fetch_one(conn)
     .await
@@ -63,6 +64,7 @@ pub async fn update(
             email = COALESCE($5, email),
             address = COALESCE($6, address),
             pay_rate_percent = COALESCE($7, pay_rate_percent),
+            locale = COALESCE($9, locale),
             last_edited_by = $8,
             updated_at = now()
          WHERE id = $1
@@ -77,6 +79,7 @@ pub async fn update(
 	.bind(&input.address)
 	.bind(input.pay_rate_percent)
 	.bind(user_id)
+	.bind(&input.locale)
 	.fetch_optional(conn)
 	.await
 }

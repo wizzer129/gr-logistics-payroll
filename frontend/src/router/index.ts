@@ -11,6 +11,19 @@ const router = createRouter({
 			meta: { requiresAuth: false },
 		},
 		{
+			path: '/forgot-password',
+			name: 'forgot-password',
+			component: () => import('../views/ForgotPasswordView.vue'),
+			meta: { requiresAuth: false },
+		},
+		{
+			// Opened from the emailed link: /reset-password?token=…
+			path: '/reset-password',
+			name: 'reset-password',
+			component: () => import('../views/ResetPasswordView.vue'),
+			meta: { requiresAuth: false },
+		},
+		{
 			path: '/',
 			name: 'dashboard',
 			component: () => import('../views/DashboardView.vue'),
@@ -29,6 +42,19 @@ const router = createRouter({
 			meta: { requiresAuth: true, roles: ['admin'] },
 		},
 		{
+			path: '/settings',
+			name: 'settings',
+			component: () => import('../views/SettingsView.vue'),
+			meta: { requiresAuth: true, roles: ['admin'] },
+		},
+		{
+			// A signed-in user whose role has no pages (today: email-only accounts).
+			path: '/no-access',
+			name: 'no-access',
+			component: () => import('../views/NoAccessView.vue'),
+			meta: { requiresAuth: true },
+		},
+		{
 			path: '/employees',
 			name: 'employees',
 			component: () => import('../views/EmployeesView.vue'),
@@ -44,9 +70,10 @@ router.beforeEach((to) => {
 		return { name: 'login', query: { redirect: to.fullPath } };
 	}
 
+	// Not 'dashboard': it needs admin too, so a non-admin would redirect forever.
 	const roles = to.meta.roles as string[] | undefined;
 	if (roles && auth.user && !roles.includes(auth.user.role)) {
-		return { name: 'dashboard' };
+		return { name: 'no-access' };
 	}
 
 	return true;

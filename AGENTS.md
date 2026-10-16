@@ -19,8 +19,10 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
       intentional, considered exception — not a regression to "fix" back to Bun natives.
 - **Backend: one crate per concern, already chosen.** HTTP = axum/tower/tower-http,
   Postgres = sqlx, validation = garde, money = rust_decimal, errors = thiserror, logging =
-  tracing, HTTP client = reqwest (only the `healthcheck` subcommand uses it). Don't add a
-  second crate that duplicates one of these.
+  tracing, HTTP client = reqwest (the `healthcheck` subcommand and the Resend email sender),
+  email templates = minijinja, TLS = rustls with the `ring` backend (sqlx and reqwest share
+  it; `install_tls_provider()` in `lib.rs`). Don't add a second crate that duplicates one of
+  these.
 - **No ORM.** Schema lives as plain SQL in `backend/migrations/`, applied by
   `gr-logistics migrate` (files embedded in the binary, tracked in `schema_migrations`,
   under a Postgres advisory lock). **Never edit an applied migration** — add the next
@@ -106,6 +108,25 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
   `meta.roles` already exists. Keep declaring the required role explicitly on anything new,
   so adding the `employee` role later is additive, not a retrofit.
 
+## Email
+
+Designed in [EMAIL-SPEC.md](./EMAIL-SPEC.md); that file tracks which phases are built.
+
+- **Never send inside a request.** Call `email::enqueue(&mut tx, &message, to, locale, user)`
+  in the same transaction as the change; the outbox worker in `serve` sends it with retries.
+  One outbox row per recipient: never put two people on one `To:` line.
+- **Templates are Maizzle 6 (`emails/emails/*.vue`), built into `backend/templates/email/`,
+  which is committed.** After editing a template run `bun run emails:build` and commit the
+  output; CI fails otherwise. Runtime placeholders go in `<Raw>{{ … }}</Raw>`, and all text
+  comes from `backend/locales/email/{en,es}.json` (no literal copy in templates).
+- **Recipients are picked, never typed:** `RecipientSelect.vue` (users and/or employees with
+  an email) sends ids, and `services::email_recipients::resolve()` turns them into
+  addresses, each in its recipient's saved language (`users.locale` follows the UI's,
+  `employees.locale` is on the employee form).
+- Dev uses `EMAIL_PROVIDER=log` (emails land in `backend/target/emails/`); production refuses
+  it and needs `resend` plus `RESEND_API_KEY` and `EMAIL_FROM`. After a deploy, check sending
+  with `gr-logistics send-test-email --to <you>`.
+
 ## Auth model
 
 - Session-based via an `httpOnly` cookie (`gr_session` → `sessions` table; see
@@ -147,6 +168,11 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
 - **Confirmations go through `useConfirmStore().confirm({ title, text, confirmText?, color? })`**
   (`frontend/src/store/confirm-store.ts`), which resolves `true`/`false`; App.vue renders the
   one `<ConfirmDialog>`. Never `window.confirm()` — it can't be translated or themed.
+- **Unsaved work is guarded** with `useUnsavedChanges()`
+  (`frontend/src/composables/useUnsavedChanges.ts`): `guardLeave(isDirty, onDiscard?)` once
+  per view (route leave + browser refresh/close), and `confirmDiscard(isDirty)` before
+  closing an edit dialog (route the `v-dialog`'s close and its Cancel button through it).
+  A new form or dialog that holds user input should do the same.
 - **API calls never fail silently.** Use `apiJson`/`apiRequest` (`frontend/src/utils/api.ts`,
   which throw a translated `ApiError` for non-2xx _and_ network failures) and
   `catch (error) { toast.fromError(error) }`; writes also `toast.success(...)`. A dialog

@@ -1,12 +1,11 @@
 Fix v-date picker to allow week range visual
-Add modals that protect users from routing out before they saved their work.
 Maybe add way to save work.
 Add table sorting and ability to email PDFs of payment reports to mom for printing
 Update the login view design.
 Show the logged-in user's name in the top right (users only have an email today — needs a name
 column on `users` plus a migration, and `/api/auth/me` returning it).
 
-Accounts & email:
+Accounts & email (design: EMAIL-SPEC.md):
 
 - Email service (backend): sends paystubs and password-reset emails. Templates built with
   Maizzle. Pick a sending provider and add its credentials to backend/.env.schema +

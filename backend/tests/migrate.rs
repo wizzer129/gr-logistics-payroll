@@ -4,14 +4,24 @@
 use gr_logistics::cli::migrate::apply;
 use sqlx::PgPool;
 
-const MIGRATION_COUNT: usize = 9;
+/// Every `.sql` file in `migrations/`, so adding one doesn't mean editing this test.
+fn migration_count() -> usize {
+	std::fs::read_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/migrations"))
+		.unwrap()
+		.filter(|entry| {
+			entry
+				.as_ref()
+				.is_ok_and(|e| e.path().extension().is_some_and(|ext| ext == "sql"))
+		})
+		.count()
+}
 
 #[sqlx::test(migrations = false)]
 async fn applies_everything_once_then_nothing(pool: PgPool) {
 	let mut conn = pool.acquire().await.unwrap();
 
 	let first = apply(&mut conn).await.unwrap();
-	assert_eq!(first.len(), MIGRATION_COUNT);
+	assert_eq!(first.len(), migration_count());
 	assert_eq!(first[0], "0001_init.sql");
 
 	let second = apply(&mut conn).await.unwrap();
@@ -36,13 +46,13 @@ async fn concurrent_runs_apply_each_file_exactly_once(pool: PgPool) {
 	};
 
 	let (a, b) = tokio::join!(run(), run());
-	assert_eq!(a.len() + b.len(), MIGRATION_COUNT);
+	assert_eq!(a.len() + b.len(), migration_count());
 
 	let recorded: i64 = sqlx::query_scalar("SELECT count(*) FROM schema_migrations")
 		.fetch_one(&pool)
 		.await
 		.unwrap();
-	assert_eq!(recorded, MIGRATION_COUNT as i64);
+	assert_eq!(recorded, migration_count() as i64);
 }
 
 /// A database migrated by the Bun script must look up to date to the Rust runner.

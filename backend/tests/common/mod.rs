@@ -6,7 +6,7 @@ use std::sync::Arc;
 use axum::Router;
 use gr_logistics::{
 	build_app,
-	config::{Config, Environment, LogFormat},
+	config::{Config, EmailProvider, Environment, LogFormat},
 	state::AppState,
 };
 use sqlx::postgres::PgPoolOptions;
@@ -20,6 +20,7 @@ pub fn test_config() -> Config {
 		cors_origin: "http://localhost:5173".parse().unwrap(),
 		log_level: "error".into(),
 		log_format: LogFormat::Pretty,
+		email: EmailProvider::Log,
 	}
 }
 

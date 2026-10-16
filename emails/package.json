@@ -1,0 +1,12 @@
+{
+	"name": "emails",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "maizzle serve",
+		"build": "maizzle build"
+	},
+	"devDependencies": {
+		"@maizzle/framework": "^6.2.1"
+	}
+}

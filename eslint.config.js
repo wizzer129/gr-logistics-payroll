@@ -26,6 +26,8 @@ export default [
 			'vue/singleline-html-element-content-newline': 'off',
 			'vue/multiline-html-element-content-newline': 'off',
 			'vue/html-closing-bracket-newline': 'off',
+			// Prettier writes void elements as `<br />`; this rule wants `<br>`.
+			'vue/html-self-closing': 'off',
 			'@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
 		},
 	},

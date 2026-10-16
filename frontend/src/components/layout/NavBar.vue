@@ -19,6 +19,7 @@ const navLinks = [
 	{ to: '/payment-processing', labelKey: 'nav.paymentProcessing' },
 	{ to: '/edit-payment', labelKey: 'nav.editPayment' },
 	{ to: '/employees', labelKey: 'nav.employees' },
+	{ to: '/settings', labelKey: 'nav.settings' },
 ];
 
 const localeItems = [
@@ -28,11 +29,14 @@ const localeItems = [
 
 function onLocaleChange(value: string): void {
 	setLocale(value as 'en' | 'es');
+	auth.saveLocale(value as 'en' | 'es');
 }
 
 async function onLogout(): Promise<void> {
+	// Navigate first: a view with unsaved changes can cancel this, and then nobody's logged out.
+	const failure = await router.push({ name: 'login' });
+	if (failure) return;
 	await auth.logout();
-	await router.push({ name: 'login' });
 }
 </script>
 

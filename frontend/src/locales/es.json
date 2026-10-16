@@ -9,7 +9,22 @@
 		"logout": "Cerrar Sesión",
 		"showPassword": "Mostrar contraseña",
 		"hidePassword": "Ocultar contraseña",
-		"loginFailed": "Correo electrónico o contraseña incorrectos"
+		"loginFailed": "Correo electrónico o contraseña incorrectos",
+		"forgotPassword": "¿Olvidó su contraseña?",
+		"forgotTitle": "Restablecer su contraseña",
+		"forgotIntro": "Escriba el correo de su cuenta y le enviaremos un enlace para elegir una nueva contraseña.",
+		"sendLink": "Enviar enlace",
+		"linkSent": "Si ese correo tiene una cuenta, le enviamos un enlace. El enlace vence en 1 hora.",
+		"backToLogin": "Volver a iniciar sesión",
+		"resetTitle": "Elija una nueva contraseña",
+		"newPassword": "Nueva contraseña",
+		"confirmPassword": "Confirme la nueva contraseña",
+		"savePassword": "Guardar nueva contraseña",
+		"passwordLength": "Use de 12 a 128 caracteres.",
+		"passwordsDontMatch": "Las contraseñas no coinciden.",
+		"passwordReset": "Contraseña actualizada. Inicie sesión con su nueva contraseña.",
+		"linkInvalid": "Este enlace no es válido, ya se usó o venció.",
+		"requestNewLink": "Pedir un enlace nuevo"
 	},
 	"nav": {
 		"dashboard": "Panel",
@@ -17,7 +32,8 @@
 		"editPayment": "Editar Pago",
 		"employees": "Empleados",
 		"openMenu": "Abrir menú de navegación",
-		"toggleTheme": "Alternar modo oscuro"
+		"toggleTheme": "Alternar modo oscuro",
+		"settings": "Configuración"
 	},
 	"dashboard": {
 		"ytdSummary": "Resumen del Año",
@@ -125,7 +141,9 @@
 		"updated": "Empleado actualizado",
 		"deleted": "Empleado eliminado",
 		"confirmDeleteTitle": "¿Eliminar empleado?",
-		"confirmDelete": "{name} se quitará de la lista de empleados. Su historial de pagos se conserva."
+		"confirmDelete": "{name} se quitará de la lista de empleados. Su historial de pagos se conserva.",
+		"language": "Idioma de los correos",
+		"languageHint": "Los recibos de pago que se envíen a este empleado se escriben en este idioma."
 	},
 	"common": {
 		"edit": "Editar",
@@ -138,7 +156,11 @@
 		"from": "Desde",
 		"to": "Hasta",
 		"search": "Buscar",
-		"confirm": "Confirmar"
+		"confirm": "Confirmar",
+		"languages": {
+			"en": "English",
+			"es": "Español"
+		}
 	},
 	"pagination": {
 		"pageSize": "Por página",
@@ -167,6 +189,27 @@
 		"UNKNOWN": "Respuesta inesperada del servidor.",
 		"NETWORK_ERROR": "No se pudo conectar con el servidor. Revise su conexión.",
 		"METHOD_NOT_ALLOWED": "Esa acción no está disponible.",
-		"REQUEST_TIMEOUT": "El servidor tardó demasiado en responder. Intente de nuevo."
+		"REQUEST_TIMEOUT": "El servidor tardó demasiado en responder. Intente de nuevo.",
+		"RESET_TOKEN_INVALID": "Este enlace no es válido, ya se usó o venció.",
+		"RECIPIENT_NOT_FOUND": "Uno de los destinatarios elegidos ya no puede recibir correos. Recargue e intente de nuevo."
+	},
+	"unsaved": {
+		"title": "¿Descartar cambios sin guardar?",
+		"text": "Tiene cambios que no se han guardado. Si sale ahora, se perderán.",
+		"discard": "Descartar"
+	},
+	"recipients": {
+		"user": "Usuario",
+		"employee": "Empleado"
+	},
+	"settings": {
+		"monthlyTitle": "Reporte mensual",
+		"monthlyHint": "El día 1 de cada mes, estos usuarios reciben por correo el reporte de nómina del mes anterior. Solo los usuarios pueden recibirlo, porque muestra el pago de todos.",
+		"monthlyRecipients": "Enviar el reporte mensual a",
+		"monthlySaved": "Destinatarios del reporte mensual guardados"
+	},
+	"noAccess": {
+		"title": "Sin acceso",
+		"body": "Su cuenta puede recibir correos de GR Logistics, pero no tiene acceso a la aplicación."
 	}
 }
