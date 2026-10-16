@@ -110,8 +110,12 @@ const chartOptions = computed(() => ({
 </script>
 
 <template>
-	<div style="height: 280px">
+	<div style="height: 320px">
 		<!-- Legend text color isn't scriptable, so rebuild the chart on theme change. -->
-		<Line :key="colors.isDark.value ? 'dark' : 'light'" :data="chartData" :options="chartOptions" />
+		<Line
+			:key="colors.isDark.value ? 'dark' : 'light'"
+			:data="chartData"
+			:options="chartOptions"
+		/>
 	</div>
 </template>

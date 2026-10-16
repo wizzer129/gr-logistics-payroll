@@ -83,6 +83,12 @@ const history = ref<InstanceType<typeof PaymentHistory> | null>(null);
 // The history gutter is desktop-only; below lg there isn't room beside the two columns.
 const { lgAndUp } = useDisplay();
 
+const HISTORY_COLLAPSED_KEY = 'gr-logistics-history-collapsed';
+const historyCollapsed = ref(localStorage.getItem(HISTORY_COLLAPSED_KEY) === 'true');
+watch(historyCollapsed, (collapsed) =>
+	localStorage.setItem(HISTORY_COLLAPSED_KEY, String(collapsed)),
+);
+
 const canComplete = computed(() => Boolean(store.employeeId) && store.hasPayment);
 
 async function onSubmit(complete: boolean): Promise<void> {
@@ -231,9 +237,25 @@ const paystubData = computed<PaystubData>(() => ({
 		<PaystubPrinter ref="printer" />
 
 		<!-- A right-hand gutter: full height, fixed to the window while the page scrolls. -->
-		<v-navigation-drawer v-if="lgAndUp" location="right" permanent width="400">
-			<PaymentHistory ref="history" class="fill-height" />
-		</v-navigation-drawer>
+		<template v-if="lgAndUp">
+			<v-navigation-drawer v-if="!historyCollapsed" location="right" permanent width="400">
+				<PaymentHistory
+					ref="history"
+					class="fill-height"
+					@collapse="historyCollapsed = true"
+				/>
+			</v-navigation-drawer>
+			<!-- Collapsed, the drawer is gone entirely; a tab on the right edge brings it back. -->
+			<v-btn
+				v-else
+				class="history-expand"
+				icon="mdi-chevron-left"
+				:aria-label="t('history.expand')"
+				:title="t('history.expand')"
+				elevation="4"
+				@click="historyCollapsed = false"
+			/>
+		</template>
 
 		<v-snackbar v-model="toast.show" :color="toast.color" location="top right" timeout="4000">
 			{{ toast.text }}
@@ -242,6 +264,15 @@ const paystubData = computed<PaystubData>(() => ({
 </template>
 
 <style scoped>
+/* Below the 64px app bar, flush against the right edge of the window. */
+.history-expand {
+	position: fixed;
+	bottom: 80px;
+	right: 0;
+	z-index: 1004;
+	border-radius: 6px 0px 0px 6px;
+}
+
 /* A neutral "desk" around the paper so the stub reads as a document in either theme. */
 .paystub-preview {
 	padding: 24px !important;

@@ -6,6 +6,6 @@ use crate::config::Config;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub pool: PgPool,
-    pub config: Arc<Config>,
+	pub pool: PgPool,
+	pub config: Arc<Config>,
 }

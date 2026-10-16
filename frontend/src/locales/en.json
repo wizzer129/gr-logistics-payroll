@@ -6,7 +6,9 @@
 		"login": "Log In",
 		"email": "Email",
 		"password": "Password",
-		"logout": "Log Out"
+		"logout": "Log Out",
+		"showPassword": "Show password",
+		"hidePassword": "Hide password"
 	},
 	"nav": {
 		"dashboard": "Dashboard",
@@ -21,6 +23,7 @@
 		"employeeSummary": "Employee Summary",
 		"selectEmployee": "Select Employee",
 		"ytdTotal": "YTD Paid ({year})",
+		"monthTotal": "Paid This Month",
 		"ytdGross": "Gross Earned ({year})",
 		"paycheckCount": "Paychecks",
 		"totalLoads": "Loads",
@@ -95,7 +98,9 @@
 		"employee": "Employee",
 		"processedAt": "Processed",
 		"empty": "No payments processed yet",
-		"processedByUser": "by {user}"
+		"processedByUser": "by {user}",
+		"collapse": "Hide history",
+		"expand": "Show payment history"
 	},
 	"employees": {
 		"add": "Add Employee",

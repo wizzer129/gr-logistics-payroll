@@ -12,7 +12,12 @@ export type EmployeeInput = {
 const { t } = useI18n();
 const emit = defineEmits<{ save: [employee: EmployeeInput] }>();
 
-const form = reactive<EmployeeInput>({ firstName: '', lastName: '', email: '', payRatePercent: 42 });
+const form = reactive<EmployeeInput>({
+	firstName: '',
+	lastName: '',
+	email: '',
+	payRatePercent: 42,
+});
 
 function onSubmit(): void {
 	emit('save', { ...form });

@@ -1,6 +1,6 @@
 use axum::{
-    Json,
-    extract::{FromRequest, Request},
+	Json,
+	extract::{FromRequest, Request},
 };
 use serde::de::DeserializeOwned;
 
@@ -12,21 +12,21 @@ pub struct ValidatedJson<T>(pub T);
 
 impl<T, S> FromRequest<S> for ValidatedJson<T>
 where
-    T: DeserializeOwned + garde::Validate,
-    T::Context: Default,
-    S: Send + Sync,
+	T: DeserializeOwned + garde::Validate,
+	T::Context: Default,
+	S: Send + Sync,
 {
-    type Rejection = AppError;
+	type Rejection = AppError;
 
-    async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
-        let Json(value) = Json::<T>::from_request(req, state)
-            .await
-            .map_err(|rejection| AppError::BadRequest(rejection.body_text()))?;
+	async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
+		let Json(value) = Json::<T>::from_request(req, state)
+			.await
+			.map_err(|rejection| AppError::BadRequest(rejection.body_text()))?;
 
-        value
-            .validate()
-            .map_err(|report| AppError::BadRequest(report.to_string()))?;
+		value
+			.validate()
+			.map_err(|report| AppError::BadRequest(report.to_string()))?;
 
-        Ok(Self(value))
-    }
+		Ok(Self(value))
+	}
 }

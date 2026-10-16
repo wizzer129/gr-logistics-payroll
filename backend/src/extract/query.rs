@@ -1,6 +1,6 @@
 use axum::{
-    extract::{FromRequestParts, Query},
-    http::request::Parts,
+	extract::{FromRequestParts, Query},
+	http::request::Parts,
 };
 use serde::de::DeserializeOwned;
 
@@ -11,15 +11,15 @@ pub struct ApiQuery<T>(pub T);
 
 impl<T, S> FromRequestParts<S> for ApiQuery<T>
 where
-    T: DeserializeOwned,
-    S: Send + Sync,
+	T: DeserializeOwned,
+	S: Send + Sync,
 {
-    type Rejection = AppError;
+	type Rejection = AppError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Query(value) = Query::<T>::from_request_parts(parts, state)
-            .await
-            .map_err(|rejection| AppError::BadRequest(rejection.body_text()))?;
-        Ok(Self(value))
-    }
+	async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+		let Query(value) = Query::<T>::from_request_parts(parts, state)
+			.await
+			.map_err(|rejection| AppError::BadRequest(rejection.body_text()))?;
+		Ok(Self(value))
+	}
 }

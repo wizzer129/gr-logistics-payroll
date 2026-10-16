@@ -9,7 +9,7 @@ const emit = defineEmits<{ remove: [index: number] }>();
 </script>
 
 <template>
-	<v-table density="compact" striped="odd">
+	<v-table class="pa-2" density="comfortable" striped="odd">
 		<thead>
 			<tr>
 				<th class="text-start">{{ t('payment.date') }}</th>
@@ -38,3 +38,8 @@ const emit = defineEmits<{ remove: [index: number] }>();
 		</tbody>
 	</v-table>
 </template>
+<style scoped>
+.v-table--density-comfortable {
+	border-radius: 6px;
+}
+</style>

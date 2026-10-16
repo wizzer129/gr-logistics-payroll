@@ -146,7 +146,8 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
   `.prettierrc`). `eslint.config.js` deliberately disables the `eslint-plugin-vue`
   stylistic rules that fight Prettier (`vue/html-indent`, `vue/max-attributes-per-line`,
   etc.) — don't re-enable them or hand-format around what Prettier would do. Rust is
-  `cargo fmt` + `cargo clippy -D warnings`.
+  `cargo fmt` + `cargo clippy -D warnings`; `backend/rustfmt.toml` mirrors `.prettierrc`
+  (tabs, width 4, 100 columns) — keep the two in step.
 - CRUD-ish features are split into a container view + form/list-type child components
   (see `components/payment-processing/`, `components/employees/`) — props down, events up.
   Don't collapse these back into one mega-component.
@@ -180,8 +181,9 @@ This project has no human reviewer gate beyond CI, so treat these as mandatory, 
    create throwaway databases and never touch the dev data).
 2. `cd frontend && bun run build && bun run test` (build runs `vue-tsc` — it catches
    `.vue` type errors `tsc` alone cannot)
-3. `bun run lint` from the repo root (and `bunx prettier --write <changed files>` first —
-   lint will flag Prettier-formatting drift as real findings otherwise)
+3. `bun run lint` and `bun run format:check` from the repo root — each covers frontend
+   (ESLint / Prettier) and backend (Clippy / rustfmt); CI runs the same checks. Run
+   `bun run format` first to fix any formatting drift.
 4. For a change touching a user-facing flow: `cd frontend && bun run e2e` (Playwright —
    starts the dev server itself, nothing else needs to be running first)
 

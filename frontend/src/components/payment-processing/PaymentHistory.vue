@@ -17,6 +17,7 @@ type HistoryRow = {
 const MAX_ROWS = 10;
 
 const { t, locale } = useI18n();
+const emit = defineEmits<{ collapse: [] }>();
 const rows = ref<HistoryRow[]>([]);
 const loading = ref(false);
 
@@ -35,9 +36,6 @@ async function refresh(): Promise<void> {
 onMounted(refresh);
 defineExpose({ refresh });
 
-const dateFormatter = computed(
-	() => new Intl.DateTimeFormat(locale.value, { month: 'short', day: 'numeric' }),
-);
 const timeFormatter = computed(
 	() => new Intl.DateTimeFormat(locale.value, { hour: 'numeric', minute: '2-digit' }),
 );
@@ -45,11 +43,19 @@ const timeFormatter = computed(
 
 <template>
 	<v-card :title="t('history.title')" :loading="loading" flat class="history">
+		<template #append>
+			<v-btn
+				icon="mdi-chevron-right"
+				:aria-label="t('history.collapse')"
+				variant="tonal"
+				density="comfortable"
+				@click="emit('collapse')"
+			/>
+		</template>
 		<v-table v-if="rows.length" density="compact" class="history-table">
 			<thead>
 				<tr>
 					<th>{{ t('history.employee') }}</th>
-					<th>{{ t('payment.payday') }}</th>
 					<th>{{ t('history.processedAt') }}</th>
 				</tr>
 			</thead>
@@ -59,12 +65,15 @@ const timeFormatter = computed(
 					<td class="py-1">
 						<div class="font-weight-medium">{{ row.firstName }} {{ row.lastName }}</div>
 						<div class="text-caption text-medium-emphasis by">
-							{{ t('history.processedByUser', { user: row.createdByEmail ?? '—' }) }}
+							{{
+								t('history.processedByUser', {
+									user: row.createdByEmail?.split('@')[0] ?? '—',
+								})
+							}}
 						</div>
 					</td>
-					<td>{{ formatMonthDay(row.payday, locale) }}</td>
 					<td class="py-1">
-						<div>{{ dateFormatter.format(new Date(row.createdAt)) }}</div>
+						<div>{{ formatMonthDay(row.createdAt, locale) }}</div>
 						<div class="text-caption text-medium-emphasis">
 							{{ timeFormatter.format(new Date(row.createdAt)) }}
 						</div>

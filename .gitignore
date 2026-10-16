@@ -13,3 +13,4 @@ spreadsheets/
 target/
 csv/
 deploy/backend.env
+backups/

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { useDisplay } from 'vuetify';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../store/auth-store';
 import { setLocale } from '../../plugins/i18n';
-import { currentTheme, toggleTheme } from '../../plugins/vuetify';
+import ThemeToggle from './ThemeToggle.vue';
 
 const { t, locale } = useI18n();
 const { mobile } = useDisplay();
@@ -25,8 +25,6 @@ const localeItems = [
 	{ title: 'EN', value: 'en' },
 	{ title: 'ES', value: 'es' },
 ];
-
-const isDark = computed(() => currentTheme() === 'dark');
 
 function onLocaleChange(value: string): void {
 	setLocale(value as 'en' | 'es');
@@ -59,12 +57,7 @@ async function onLogout(): Promise<void> {
 			variant="plain"
 			@update:model-value="onLocaleChange"
 		/>
-		<v-btn
-			:icon="isDark ? 'mdi-weather-sunny' : 'mdi-weather-night'"
-			:aria-label="t('nav.toggleTheme')"
-			variant="text"
-			@click="toggleTheme"
-		/>
+		<ThemeToggle />
 		<v-btn variant="text" @click="onLogout">{{ t('auth.logout') }}</v-btn>
 	</v-app-bar>
 

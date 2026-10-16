@@ -13,8 +13,8 @@ use serde::{Deserialize, Deserializer};
 /// Optional text fields: `""` / whitespace means "not provided". The frontend's employee
 /// form sends `email: ""` when the field is left blank.
 pub(crate) fn blank_as_none<'de, D: Deserializer<'de>>(
-    deserializer: D,
+	deserializer: D,
 ) -> Result<Option<String>, D::Error> {
-    let value = Option::<String>::deserialize(deserializer)?;
-    Ok(value.filter(|s| !s.trim().is_empty()))
+	let value = Option::<String>::deserialize(deserializer)?;
+	Ok(value.filter(|s| !s.trim().is_empty()))
 }

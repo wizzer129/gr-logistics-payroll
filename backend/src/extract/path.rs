@@ -1,6 +1,6 @@
 use axum::{
-    extract::{FromRequestParts, Path},
-    http::request::Parts,
+	extract::{FromRequestParts, Path},
+	http::request::Parts,
 };
 use uuid::Uuid;
 
@@ -11,12 +11,12 @@ use crate::error::AppError;
 pub struct IdPath(pub Uuid);
 
 impl<S: Send + Sync> FromRequestParts<S> for IdPath {
-    type Rejection = AppError;
+	type Rejection = AppError;
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Path(id) = Path::<Uuid>::from_request_parts(parts, state)
-            .await
-            .map_err(|_| AppError::BadRequest("Invalid id".into()))?;
-        Ok(Self(id))
-    }
+	async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+		let Path(id) = Path::<Uuid>::from_request_parts(parts, state)
+			.await
+			.map_err(|_| AppError::BadRequest("Invalid id".into()))?;
+		Ok(Self(id))
+	}
 }

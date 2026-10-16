@@ -110,6 +110,10 @@ const chartOptions = computed(() => ({
 		<!-- Legend text color is static (Chart.js's legend plugin has no scriptable
 		color option, unlike scale ticks) so it's baked in at chart creation. Keying on
 		the theme forces a full remount on toggle instead of a stale in-place update. -->
-		<Bar :key="colors.isDark.value ? 'dark' : 'light'" :data="chartData" :options="chartOptions" />
+		<Bar
+			:key="colors.isDark.value ? 'dark' : 'light'"
+			:data="chartData"
+			:options="chartOptions"
+		/>
 	</div>
 </template>

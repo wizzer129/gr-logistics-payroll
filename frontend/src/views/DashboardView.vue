@@ -3,7 +3,6 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEmployees } from '../composables/useEmployees';
 import { formatCurrency } from '../utils/currency';
-import { formatMonthDay } from '../utils/week';
 import PaymentsByEmployeeChart from '../components/dashboard/PaymentsByEmployeeChart.vue';
 import PaymentsOverTimeChart from '../components/dashboard/PaymentsOverTimeChart.vue';
 import { apiFetch } from '../utils/api';
@@ -28,18 +27,10 @@ type EmployeeSummary = {
 	year: number;
 	employee: { id: string; firstName: string; lastName: string };
 	ytdTotal: number;
-	logs: {
-		id: string;
-		weekStart: string;
-		weekEnd: string;
-		payday: string;
-		status: string;
-		summaryTotal: number;
-		employeeCut: number;
-	}[];
+	monthTotal: number;
 };
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const { employees, loadEmployees } = useEmployees();
 
 const summary = ref<DashboardSummary | null>(null);
@@ -66,7 +57,13 @@ function employeeDisplayName(employee: { firstName: string; lastName: string }):
 }
 
 const hasByEmployeeData = computed(() => (summary.value?.byEmployee.length ?? 0) > 0);
-const hasByMonthData = computed(() => (summary.value?.byMonth.length ?? 0) > 0);
+// The current month is still in progress, so its partial total would read as a drop.
+const pastMonths = computed(() => {
+	const now = new Date();
+	const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+	return (summary.value?.byMonth ?? []).filter((row) => row.period !== currentPeriod);
+});
+const hasByMonthData = computed(() => pastMonths.value.length > 0);
 
 onMounted(() => {
 	loadEmployees();
@@ -123,7 +120,7 @@ onMounted(() => {
 
 		<v-row class="mt-2">
 			<v-col cols="12" md="6">
-				<v-card :title="t('dashboard.byEmployee')">
+				<v-card class="h-100" :title="t('dashboard.byEmployee')">
 					<v-card-text>
 						<PaymentsByEmployeeChart
 							v-if="hasByEmployeeData"
@@ -134,9 +131,9 @@ onMounted(() => {
 				</v-card>
 			</v-col>
 			<v-col cols="12" md="6">
-				<v-card :title="t('dashboard.byTime')">
+				<v-card class="h-100" :title="t('dashboard.byTime')">
 					<v-card-text>
-						<PaymentsOverTimeChart v-if="hasByMonthData" :data="summary!.byMonth" />
+						<PaymentsOverTimeChart v-if="hasByMonthData" :data="pastMonths" />
 						<p v-else class="text-medium-emphasis">{{ t('dashboard.noData') }}</p>
 					</v-card-text>
 				</v-card>
@@ -153,34 +150,20 @@ onMounted(() => {
 					:label="t('dashboard.selectEmployee')"
 				/>
 
-				<template v-if="employeeSummary">
-					<div class="text-caption text-medium-emphasis">
-						{{ t('dashboard.ytdTotal', { year: employeeSummary.year }) }}
-					</div>
-					<div class="text-h5 mb-4">{{ formatCurrency(employeeSummary.ytdTotal) }}</div>
-
-					<v-table density="compact" striped="odd">
-						<thead>
-							<tr>
-								<th>{{ t('payment.weekOf') }}</th>
-								<th>{{ t('payment.payday') }}</th>
-								<th>Status</th>
-								<th class="text-right">{{ t('payment.totalPay') }}</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="log in employeeSummary.logs" :key="log.id">
-								<td>
-									{{ formatMonthDay(log.weekStart, locale) }} –
-									{{ formatMonthDay(log.weekEnd, locale) }}
-								</td>
-								<td>{{ formatMonthDay(log.payday, locale) }}</td>
-								<td>{{ log.status }}</td>
-								<td class="text-right">{{ formatCurrency(log.employeeCut) }}</td>
-							</tr>
-						</tbody>
-					</v-table>
-				</template>
+				<v-row v-if="employeeSummary">
+					<v-col cols="6">
+						<div class="text-caption text-medium-emphasis">
+							{{ t('dashboard.ytdTotal', { year: employeeSummary.year }) }}
+						</div>
+						<div class="text-h5">{{ formatCurrency(employeeSummary.ytdTotal) }}</div>
+					</v-col>
+					<v-col cols="6">
+						<div class="text-caption text-medium-emphasis">
+							{{ t('dashboard.monthTotal') }}
+						</div>
+						<div class="text-h5">{{ formatCurrency(employeeSummary.monthTotal) }}</div>
+					</v-col>
+				</v-row>
 				<p v-else class="text-medium-emphasis">{{ t('dashboard.selectEmployeePrompt') }}</p>
 			</v-card-text>
 		</v-card>

@@ -6,7 +6,9 @@
 		"login": "Iniciar Sesión",
 		"email": "Correo Electrónico",
 		"password": "Contraseña",
-		"logout": "Cerrar Sesión"
+		"logout": "Cerrar Sesión",
+		"showPassword": "Mostrar contraseña",
+		"hidePassword": "Ocultar contraseña"
 	},
 	"nav": {
 		"dashboard": "Panel",
@@ -21,6 +23,7 @@
 		"employeeSummary": "Resumen del Empleado",
 		"selectEmployee": "Seleccionar Empleado",
 		"ytdTotal": "Pagado Este Año ({year})",
+		"monthTotal": "Pagado Este Mes",
 		"ytdGross": "Ingreso Bruto ({year})",
 		"paycheckCount": "Cheques",
 		"totalLoads": "Cargas",
@@ -95,7 +98,9 @@
 		"employee": "Empleado",
 		"processedAt": "Procesado",
 		"empty": "Aún no se han procesado pagos",
-		"processedByUser": "por {user}"
+		"processedByUser": "por {user}",
+		"collapse": "Ocultar historial",
+		"expand": "Mostrar historial de pagos"
 	},
 	"employees": {
 		"add": "Agregar Empleado",

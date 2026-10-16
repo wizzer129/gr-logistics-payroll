@@ -9,18 +9,18 @@ use uuid::Uuid;
 /// `stores_name_lower_key` (0006).
 /// The first spelling seen is kept: "walmart 12" after "Walmart 12" returns the same store.
 pub async fn resolve_store_id(
-    conn: &mut PgConnection,
-    name: &str,
-    user_id: Uuid,
+	conn: &mut PgConnection,
+	name: &str,
+	user_id: Uuid,
 ) -> Result<Uuid, sqlx::Error> {
-    sqlx::query_scalar(
-        "INSERT INTO stores (name, created_by, last_edited_by)
+	sqlx::query_scalar(
+		"INSERT INTO stores (name, created_by, last_edited_by)
          VALUES ($1, $2, $2)
          ON CONFLICT (lower(name)) DO UPDATE SET name = stores.name
          RETURNING id",
-    )
-    .bind(name.trim())
-    .bind(user_id)
-    .fetch_one(conn)
-    .await
+	)
+	.bind(name.trim())
+	.bind(user_id)
+	.fetch_one(conn)
+	.await
 }

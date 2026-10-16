@@ -7,41 +7,41 @@ use uuid::Uuid;
 
 #[derive(Clone, Copy, Debug)]
 pub enum AuditAction {
-    Create,
-    Update,
-    Delete,
+	Create,
+	Update,
+	Delete,
 }
 
 impl AuditAction {
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::Create => "create",
-            Self::Update => "update",
-            Self::Delete => "delete",
-        }
-    }
+	fn as_str(self) -> &'static str {
+		match self {
+			Self::Create => "create",
+			Self::Update => "update",
+			Self::Delete => "delete",
+		}
+	}
 }
 
 pub struct AuditEntry {
-    pub entity: &'static str,
-    pub entity_id: Uuid,
-    pub action: AuditAction,
-    pub changed_by: Uuid,
-    /// `{}` when there's nothing to record (e.g. deletes).
-    pub diff: Value,
+	pub entity: &'static str,
+	pub entity_id: Uuid,
+	pub action: AuditAction,
+	pub changed_by: Uuid,
+	/// `{}` when there's nothing to record (e.g. deletes).
+	pub diff: Value,
 }
 
 pub async fn record_audit(conn: &mut PgConnection, entry: AuditEntry) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "INSERT INTO audit_log (entity, entity_id, action, changed_by, diff)
+	sqlx::query(
+		"INSERT INTO audit_log (entity, entity_id, action, changed_by, diff)
          VALUES ($1, $2, $3, $4, $5)",
-    )
-    .bind(entry.entity)
-    .bind(entry.entity_id)
-    .bind(entry.action.as_str())
-    .bind(entry.changed_by)
-    .bind(Json(entry.diff))
-    .execute(conn)
-    .await?;
-    Ok(())
+	)
+	.bind(entry.entity)
+	.bind(entry.entity_id)
+	.bind(entry.action.as_str())
+	.bind(entry.changed_by)
+	.bind(Json(entry.diff))
+	.execute(conn)
+	.await?;
+	Ok(())
 }

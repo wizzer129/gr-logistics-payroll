@@ -5,18 +5,18 @@
 use std::time::Duration;
 
 pub async fn run() -> anyhow::Result<()> {
-    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".into());
-    let url = format!("http://127.0.0.1:{port}/api/health");
+	let port = std::env::var("PORT").unwrap_or_else(|_| "3000".into());
+	let url = format!("http://127.0.0.1:{port}/api/health");
 
-    let response = reqwest::Client::builder()
-        .timeout(Duration::from_secs(3))
-        .build()?
-        .get(&url)
-        .send()
-        .await?;
+	let response = reqwest::Client::builder()
+		.timeout(Duration::from_secs(3))
+		.build()?
+		.get(&url)
+		.send()
+		.await?;
 
-    if !response.status().is_success() {
-        anyhow::bail!("{url} returned {}", response.status());
-    }
-    Ok(())
+	if !response.status().is_success() {
+		anyhow::bail!("{url} returned {}", response.status());
+	}
+	Ok(())
 }
