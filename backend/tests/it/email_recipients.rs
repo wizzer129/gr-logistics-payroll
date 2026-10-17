@@ -1,10 +1,8 @@
 //! Recipients & language (EMAIL-SPEC.md §6): recipient options, saved language, the monthly
 //! report opt-in, and resolving picked ids to addresses.
 
-mod common;
-
+use crate::common::{app_with_db, insert_user, login, send};
 use axum::Router;
-use common::{app_with_db, insert_user, login, send};
 use gr_logistics::{
 	email::Locale,
 	services::email_recipients::{self, Recipient},

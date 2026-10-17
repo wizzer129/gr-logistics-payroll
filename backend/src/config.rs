@@ -36,7 +36,7 @@ pub struct Config {
 	pub email: EmailProvider,
 }
 
-/// Must be set (non-empty) or startup fails. Keep `.env.schema` in sync (tests/env_schema.rs).
+/// Must be set (non-empty) or startup fails. Keep `.env.schema` in sync (tests/it/env_schema.rs).
 pub const REQUIRED_KEYS: &[&str] = &[
 	"NODE_ENV",
 	"PORT",

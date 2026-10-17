@@ -214,7 +214,7 @@ Designed in [EMAIL-SPEC.md](./EMAIL-SPEC.md); that file tracks which phases are 
 
 - `backend/.env.schema` ([varlock](https://varlock.dev)) is the source of truth for which keys
   exist and their dev defaults; it must list exactly `REQUIRED_KEYS` + `OPTIONAL_KEYS` from
-  `backend/src/config.rs` (`backend/tests/env_schema.rs` enforces it). Secrets resolve from
+  `backend/src/config.rs` (`backend/tests/it/env_schema.rs` enforces it). Secrets resolve from
   Proton Pass via `protonPass(pass://...)` — never commit a real value. The root bun scripts
   wrap backend commands in `bunx --bun varlock run --`, run from the repo root
   (`package.json` `varlock.loadPath` points at `backend/`; run from `backend/` the plugin
@@ -228,7 +228,10 @@ This project has no human reviewer gate beyond CI, so treat these as mandatory, 
 
 1. `cd backend && cargo fmt --check && cargo clippy --all-targets -- -D warnings`, then
    `bun run test:backend` from the root (needs Postgres: `docker compose up -d db`; tests
-   create throwaway databases and never touch the dev data).
+   create throwaway databases and never touch the dev data). Integration tests are one
+   binary, `backend/tests/it/` (a new file needs a `mod` line in `main.rs`): one link
+   instead of one per file. Don't split them back out, and keep `Cargo.toml`'s
+   `[profile.dev]` debug settings; together they took a rebuild from ~6 minutes to seconds.
 2. `cd frontend && bun run build && bun run test` (build runs `vue-tsc` — it catches
    `.vue` type errors `tsc` alone cannot)
 3. `bun run lint` and `bun run format:check` from the repo root — each covers frontend

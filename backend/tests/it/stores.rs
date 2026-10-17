@@ -1,8 +1,6 @@
 //! Runs against real Postgres (`#[sqlx::test]`, DATABASE_URL from `varlock run` / .env.schema).
 
-mod common;
-
-use common::{app_with_db, insert_user};
+use crate::common::{app_with_db, insert_user};
 use gr_logistics::services::stores::resolve_store_id;
 use sqlx::PgPool;
 

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// The pages only; the backend flow is covered by backend/tests/password_reset.rs.
+// The pages only; the backend flow is covered by backend/tests/it/password_reset.rs.
 
 test('the login page links to the forgot-password form', async ({ page }) => {
 	await page.goto('/login');

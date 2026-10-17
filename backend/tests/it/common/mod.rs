@@ -1,6 +1,3 @@
-// Each integration-test crate compiles this module separately and uses only some helpers.
-#![allow(dead_code)]
-
 use std::sync::Arc;
 
 use axum::Router;

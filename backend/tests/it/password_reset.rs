@@ -1,11 +1,9 @@
 //! Password reset end to end (EMAIL-SPEC.md §7): request → outbox → email → confirm.
 
-mod common;
-
 use std::sync::Arc;
 
+use crate::common::{app_with_db, insert_user, login, send};
 use axum::Router;
-use common::{app_with_db, insert_user, login, send};
 use gr_logistics::email::{
 	outbox::Outbox,
 	render::Renderer,
@@ -138,7 +136,10 @@ async fn the_emailed_link_resets_the_password_once_and_signs_out_everywhere(pool
 	assert_eq!(ctx.confirm(&tokens[0], NEW_PASSWORD).await.0, 204);
 
 	assert_eq!(ctx.login_status(NEW_PASSWORD).await, 200);
-	assert_eq!(ctx.login_status(common::BUN_FIXTURE_PASSWORD).await, 401);
+	assert_eq!(
+		ctx.login_status(crate::common::BUN_FIXTURE_PASSWORD).await,
+		401
+	);
 	let me = send(&ctx.app, "GET", "/api/auth/me", None, Some(&cookie)).await;
 	assert_eq!(me.status, 401, "the old session was revoked");
 
@@ -161,7 +162,10 @@ async fn an_expired_link_is_rejected(pool: PgPool) {
 	let (status, body) = ctx.confirm(&token, NEW_PASSWORD).await;
 	assert_eq!(status, 400);
 	assert_eq!(body["code"], "RESET_TOKEN_INVALID");
-	assert_eq!(ctx.login_status(common::BUN_FIXTURE_PASSWORD).await, 200);
+	assert_eq!(
+		ctx.login_status(crate::common::BUN_FIXTURE_PASSWORD).await,
+		200
+	);
 }
 
 #[sqlx::test(migrations = false)]

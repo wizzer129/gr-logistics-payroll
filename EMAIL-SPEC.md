@@ -512,7 +512,7 @@ otherwise.
 
 ## 10. Config & secrets
 
-New keys in `config.rs`, `backend/.env.schema` (`tests/env_schema.rs` enforces they match)
+New keys in `config.rs`, `backend/.env.schema` (`tests/it/env_schema.rs` enforces they match)
 and `deploy/backend.env.example`:
 
 | Key              | Required                  | Notes                                                                                |

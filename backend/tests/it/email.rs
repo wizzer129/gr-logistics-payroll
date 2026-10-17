@@ -1,8 +1,6 @@
 //! The email outbox and senders (EMAIL-SPEC.md). Runs against real Postgres
 //! (`#[sqlx::test]`); `ResendSender` runs against a local stub server, never the real API.
 
-mod common;
-
 use std::{
 	sync::{Arc, Mutex},
 	time::Duration,

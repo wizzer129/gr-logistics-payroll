@@ -1,9 +1,7 @@
 //! Runs against real Postgres (`#[sqlx::test]`, DATABASE_URL from `varlock run` / .env.schema).
 
-mod common;
-
+use crate::common::{app_with_db, insert_user, login, send};
 use axum::Router;
-use common::{app_with_db, insert_user, login, send};
 use serde_json::Value;
 use sqlx::PgPool;
 use uuid::Uuid;

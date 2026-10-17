@@ -1,9 +1,7 @@
 //! Runs against real Postgres (`#[sqlx::test]`, DATABASE_URL from `varlock run` / .env.schema).
 
-mod common;
-
+use crate::common::{TestResponse, app_with_db, insert_user, login, send};
 use axum::Router;
-use common::{TestResponse, app_with_db, insert_user, login, send};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -541,26 +539,29 @@ async fn migration_backfills_existing_logs_with_the_employees_rate(pool: PgPool)
     .await
     .unwrap();
 	for (name, sql) in [
-		("0001_init.sql", include_str!("../migrations/0001_init.sql")),
+		(
+			"0001_init.sql",
+			include_str!("../../migrations/0001_init.sql"),
+		),
 		(
 			"0002_stores.sql",
-			include_str!("../migrations/0002_stores.sql"),
+			include_str!("../../migrations/0002_stores.sql"),
 		),
 		(
 			"0003_employee_loads_store_id.sql",
-			include_str!("../migrations/0003_employee_loads_store_id.sql"),
+			include_str!("../../migrations/0003_employee_loads_store_id.sql"),
 		),
 		(
 			"0004_rename_weekly_log_to_paycheck_log.sql",
-			include_str!("../migrations/0004_rename_weekly_log_to_paycheck_log.sql"),
+			include_str!("../../migrations/0004_rename_weekly_log_to_paycheck_log.sql"),
 		),
 		(
 			"0005_employee_pay_rate_percent.sql",
-			include_str!("../migrations/0005_employee_pay_rate_percent.sql"),
+			include_str!("../../migrations/0005_employee_pay_rate_percent.sql"),
 		),
 		(
 			"0006_stores_name_lower_unique.sql",
-			include_str!("../migrations/0006_stores_name_lower_unique.sql"),
+			include_str!("../../migrations/0006_stores_name_lower_unique.sql"),
 		),
 	] {
 		sqlx::raw_sql(sql).execute(&mut *conn).await.unwrap();

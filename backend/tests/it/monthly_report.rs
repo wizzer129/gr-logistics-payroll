@@ -1,13 +1,11 @@
 //! The monthly report (EMAIL-SPEC.md §8): the numbers, the scheduler, "Send now", and the
 //! "Sent emails" panel with its retry.
 
-mod common;
-
 use std::sync::Arc;
 
+use crate::common::{app_with_db, insert_user, login, send};
 use axum::Router;
 use chrono::{TimeZone, Utc};
-use common::{app_with_db, insert_user, login, send};
 use gr_logistics::email::{
 	outbox::Outbox,
 	render::Renderer,

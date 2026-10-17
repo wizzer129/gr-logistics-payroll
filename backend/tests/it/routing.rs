@@ -1,5 +1,3 @@
-mod common;
-
 use axum::{
 	body::Body,
 	http::{Method, Request, StatusCode},
@@ -7,7 +5,7 @@ use axum::{
 use tower::ServiceExt;
 
 async fn status(method: Method, uri: &str) -> StatusCode {
-	common::app_without_db()
+	crate::common::app_without_db()
 		.oneshot(
 			Request::builder()
 				.method(method)
@@ -31,8 +29,8 @@ async fn health_is_public_and_checks_the_database() {
 
 #[sqlx::test(migrations = false)]
 async fn health_is_ok_with_a_database(pool: sqlx::PgPool) {
-	let app = common::app_with_db(pool).await;
-	let response = common::send(&app, "GET", "/api/health", None, None).await;
+	let app = crate::common::app_with_db(pool).await;
+	let response = crate::common::send(&app, "GET", "/api/health", None, None).await;
 	assert_eq!(response.status, StatusCode::OK);
 	assert_eq!(response.body, serde_json::json!({ "status": "ok" }));
 }
@@ -47,7 +45,7 @@ async fn unknown_route_is_404() {
 
 #[tokio::test]
 async fn wrong_method_is_a_coded_405() {
-	let response = common::app_without_db()
+	let response = crate::common::app_without_db()
 		.oneshot(
 			Request::builder()
 				.method(Method::PATCH)
