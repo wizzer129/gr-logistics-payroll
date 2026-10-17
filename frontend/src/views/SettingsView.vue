@@ -5,7 +5,9 @@ import { useUnsavedChanges } from '../composables/useUnsavedChanges';
 import { useToastStore } from '../store/toast-store';
 import { apiJson } from '../utils/api';
 import type { RecipientSelection } from '../utils/recipients';
+import MonthlyReportSendCard from '../components/email/MonthlyReportSendCard.vue';
 import RecipientSelect from '../components/email/RecipientSelect.vue';
+import SentEmailsCard from '../components/email/SentEmailsCard.vue';
 
 const { t } = useI18n();
 const toast = useToastStore();
@@ -15,6 +17,7 @@ const recipients = ref<RecipientSelection>({ userIds: [], employeeIds: [] });
 const saved = ref<string[]>([]);
 const loading = ref(false);
 const saving = ref(false);
+const sentEmails = ref<InstanceType<typeof SentEmailsCard> | null>(null);
 
 const isDirty = () =>
 	[...recipients.value.userIds].sort().join() !== [...saved.value].sort().join();
@@ -61,26 +64,36 @@ async function save(): Promise<void> {
 	<v-container>
 		<h1 class="text-h5 mb-4">{{ t('nav.settings') }}</h1>
 
-		<v-card :title="t('settings.monthlyTitle')" :loading="loading" max-width="640">
-			<v-card-text>
-				<p class="mb-4 text-medium-emphasis">{{ t('settings.monthlyHint') }}</p>
-				<RecipientSelect
-					v-model="recipients"
-					:label="t('settings.monthlyRecipients')"
-					users-only
-				/>
-			</v-card-text>
-			<v-card-actions>
-				<v-spacer />
-				<v-btn
-					color="primary"
-					variant="flat"
-					:loading="saving"
-					:disabled="saving || !isDirty()"
-					@click="save"
-					>{{ t('common.save') }}</v-btn
-				>
-			</v-card-actions>
-		</v-card>
+		<v-row>
+			<v-col cols="12" md="6">
+				<v-card :title="t('settings.monthlyTitle')" :loading="loading" class="mb-4">
+					<v-card-text>
+						<p class="mb-4 text-medium-emphasis">{{ t('settings.monthlyHint') }}</p>
+						<RecipientSelect
+							v-model="recipients"
+							:label="t('settings.monthlyRecipients')"
+							users-only
+						/>
+					</v-card-text>
+					<v-card-actions>
+						<v-spacer />
+						<v-btn
+							color="primary"
+							variant="flat"
+							:loading="saving"
+							:disabled="saving || !isDirty()"
+							@click="save"
+							>{{ t('common.save') }}</v-btn
+						>
+					</v-card-actions>
+				</v-card>
+			</v-col>
+			<v-col cols="12" md="6">
+				<MonthlyReportSendCard @queued="sentEmails?.refresh()" />
+			</v-col>
+			<v-col cols="12">
+				<SentEmailsCard ref="sentEmails" />
+			</v-col>
+		</v-row>
 	</v-container>
 </template>

@@ -13,6 +13,34 @@ const MONTHS_EN: [&str; 12] = [
 const MONTHS_ES: [&str; 12] = [
 	"ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic",
 ];
+const MONTHS_LONG_EN: [&str; 12] = [
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December",
+];
+const MONTHS_LONG_ES: [&str; 12] = [
+	"enero",
+	"febrero",
+	"marzo",
+	"abril",
+	"mayo",
+	"junio",
+	"julio",
+	"agosto",
+	"septiembre",
+	"octubre",
+	"noviembre",
+	"diciembre",
+];
 /// Monday first, as chrono's `num_days_from_monday` counts.
 const WEEKDAYS_EN: [&str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const WEEKDAYS_ES: [&str; 7] = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
@@ -61,6 +89,30 @@ pub fn full_date(date: NaiveDate, locale: Locale) -> String {
 		Locale::En => format!("{}, {}", month_day(date, locale), date.year()),
 		Locale::Es => format!("{} {}", month_day(date, locale), date.year()),
 	}
+}
+
+/// `October 2026` / `octubre de 2026`, for the monthly report.
+pub fn month_year(date: NaiveDate, locale: Locale) -> String {
+	let index = date.month0() as usize;
+	match locale {
+		Locale::En => format!("{} {}", MONTHS_LONG_EN[index], date.year()),
+		Locale::Es => format!("{} de {}", MONTHS_LONG_ES[index], date.year()),
+	}
+}
+
+/// Change from `previous` to `current` as a whole percent: `+12%`, `-5%`, `0%`. `None` when
+/// there's nothing to compare against (`previous` is zero).
+pub fn change(current: Decimal, previous: Decimal) -> Option<String> {
+	if previous.is_zero() {
+		return None;
+	}
+	let percent = ((current - previous) / previous * Decimal::ONE_HUNDRED)
+		.round_dp_with_strategy(0, RoundingStrategy::MidpointAwayFromZero);
+	Some(if percent.is_sign_positive() && !percent.is_zero() {
+		format!("+{percent}%")
+	} else {
+		format!("{}%", percent.normalize())
+	})
 }
 
 /// `Oct 4 – Oct 10, 2026` / `4 oct – 10 oct 2026`, like the paystub's work week.
@@ -119,5 +171,23 @@ mod tests {
 			"Oct 4 – Oct 10, 2026"
 		);
 		assert_eq!(full_date(date(2026, 9, 1), Locale::Es), "1 sept 2026");
+		assert_eq!(month_year(date(2026, 9, 1), Locale::En), "September 2026");
+		assert_eq!(
+			month_year(date(2026, 9, 1), Locale::Es),
+			"septiembre de 2026"
+		);
+	}
+
+	#[test]
+	fn changes_are_whole_signed_percents() {
+		assert_eq!(change(dec!(112), dec!(100)).as_deref(), Some("+12%"));
+		assert_eq!(change(dec!(95), dec!(100)).as_deref(), Some("-5%"));
+		assert_eq!(change(dec!(100), dec!(100)).as_deref(), Some("0%"));
+		assert_eq!(
+			change(dec!(100.5), dec!(100)).as_deref(),
+			Some("+1%"),
+			"half-up"
+		);
+		assert_eq!(change(dec!(100), dec!(0)), None);
 	}
 }

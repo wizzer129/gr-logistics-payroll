@@ -45,5 +45,30 @@
 		"employee_cut": "Parte del Empleado ({rate}%)",
 		"total_pay": "Pago Total",
 		"no_loads": "No hay cargas"
+	},
+	"monthly_report": {
+		"subject": "Reporte mensual: {{ month }}",
+		"heading": "Reporte mensual",
+		"total_paid": "Total pagado",
+		"gross": "Bruto",
+		"paychecks": "Cheques de pago",
+		"attached": "El reporte completo, con una fila por empleado, va adjunto en PDF.",
+		"filename": "reporte-mensual"
+	},
+	"monthly_report_pdf": {
+		"company": "GR Logistics",
+		"title": "Reporte Mensual",
+		"total_paid": "Total Pagado",
+		"gross": "Bruto",
+		"paychecks": "Cheques",
+		"loads": "Cargas",
+		"paid": "Pagado",
+		"employee": "Empleado",
+		"by_employee": "Por empleado",
+		"total": "Total",
+		"vs_previous": "vs. {month}",
+		"no_paychecks": "No hay cheques completados con día de pago en este mes.",
+		"drafts_one": "{count} cheque con día de pago en {month} sigue en borrador y no se cuenta aquí.",
+		"drafts_other": "{count} cheques con día de pago en {month} siguen en borrador y no se cuentan aquí."
 	}
 }

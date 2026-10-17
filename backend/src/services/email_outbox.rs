@@ -6,6 +6,8 @@ use serde_json::Value;
 use sqlx::{PgConnection, PgPool, types::Json};
 use uuid::Uuid;
 
+use crate::models::email::OutboxEntry;
+
 /// The `LISTEN` channel `insert` notifies on. Postgres delivers it only when the inserting
 /// transaction commits, so the worker never wakes for a row it can't see.
 pub const NOTIFY_CHANNEL: &str = "email_outbox";
@@ -126,4 +128,56 @@ pub async fn mark_failed(pool: &PgPool, id: Uuid, error: &str) -> Result<(), sql
 	.execute(pool)
 	.await?;
 	Ok(())
+}
+
+/// The most recent emails, newest first, for the "Sent emails" panel.
+pub async fn recent(pool: &PgPool, limit: i64) -> Result<Vec<OutboxEntry>, sqlx::Error> {
+	sqlx::query_as(
+		"SELECT id, kind, recipient, status, attempts, subject, last_error, created_at,
+			sent_at, next_attempt_at, (status = 'failed' AND payload IS NOT NULL) AS retryable
+		 FROM email_outbox
+		 ORDER BY created_at DESC, id
+		 LIMIT $1",
+	)
+	.bind(limit)
+	.fetch_all(pool)
+	.await
+}
+
+pub enum Retry {
+	Queued,
+	NotFound,
+	/// Not failed, or its payload was scrubbed.
+	NotRetryable,
+}
+
+/// Puts a failed email back in the queue with a fresh set of attempts.
+pub async fn retry(conn: &mut PgConnection, id: Uuid) -> Result<Retry, sqlx::Error> {
+	let updated = sqlx::query(
+		"UPDATE email_outbox
+		 SET status = 'pending', attempts = 0, next_attempt_at = now(), last_error = NULL
+		 WHERE id = $1 AND status = 'failed' AND payload IS NOT NULL",
+	)
+	.bind(id)
+	.execute(&mut *conn)
+	.await?;
+	if updated.rows_affected() == 1 {
+		sqlx::query("SELECT pg_notify($1, $2)")
+			.bind(NOTIFY_CHANNEL)
+			.bind(id.to_string())
+			.execute(&mut *conn)
+			.await?;
+		return Ok(Retry::Queued);
+	}
+
+	let exists: bool =
+		sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM email_outbox WHERE id = $1)")
+			.bind(id)
+			.fetch_one(&mut *conn)
+			.await?;
+	Ok(if exists {
+		Retry::NotRetryable
+	} else {
+		Retry::NotFound
+	})
 }

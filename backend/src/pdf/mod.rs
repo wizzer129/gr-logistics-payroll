@@ -2,6 +2,7 @@
 //! image stays as it is. Templates (`templates/pdf/*.typ`) and fonts (`fonts/`, Noto Sans,
 //! OFL) are embedded in the binary.
 
+pub mod monthly_report;
 pub mod paystub;
 
 use std::sync::LazyLock;
@@ -21,6 +22,13 @@ const FONTS: [&[u8]; 3] = [
 static PAYSTUB: LazyLock<TypstEngine<TypstTemplateMainFile>> = LazyLock::new(|| {
 	TypstEngine::builder()
 		.main_file(include_str!("../../templates/pdf/paystub.typ"))
+		.fonts(FONTS)
+		.build()
+});
+
+static MONTHLY_REPORT: LazyLock<TypstEngine<TypstTemplateMainFile>> = LazyLock::new(|| {
+	TypstEngine::builder()
+		.main_file(include_str!("../../templates/pdf/monthly-report.typ"))
 		.fonts(FONTS)
 		.build()
 });
@@ -45,4 +53,8 @@ fn render(
 
 pub fn paystub(document: &paystub::PaystubDocument) -> Result<Vec<u8>, String> {
 	render(&PAYSTUB, document)
+}
+
+pub fn monthly_report(document: &monthly_report::MonthlyReportDocument) -> Result<Vec<u8>, String> {
+	render(&MONTHLY_REPORT, document)
 }

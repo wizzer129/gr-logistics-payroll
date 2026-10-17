@@ -193,7 +193,9 @@
 		"RESET_TOKEN_INVALID": "This reset link is invalid, already used, or expired.",
 		"RECIPIENT_NOT_FOUND": "One of the chosen recipients can't receive email anymore. Reload and try again.",
 		"NO_RECIPIENTS": "Pick at least one person to send it to.",
-		"PAYCHECK_NOT_COMPLETED": "Only a completed paycheck can be emailed."
+		"PAYCHECK_NOT_COMPLETED": "Only a completed paycheck can be emailed.",
+		"OUTBOX_EMAIL_NOT_FOUND": "Email not found",
+		"EMAIL_NOT_RETRYABLE": "This email can't be sent again"
 	},
 	"unsaved": {
 		"title": "Discard unsaved changes?",
@@ -221,5 +223,38 @@
 		"send": "Send",
 		"queued": "Pay stub queued for {count} recipient | Pay stub queued for {count} recipients",
 		"saveFirst": "Save your changes first: the email sends the saved pay stub."
+	},
+	"monthlyReport": {
+		"sendTitle": "Send a report now",
+		"sendHint": "Sends a month's report right away: to resend one, or for a month the automatic send didn't cover.",
+		"month": "Month",
+		"recipients": "Send to",
+		"recipientsHint": "Leave empty to send it to the monthly report recipients.",
+		"send": "Send now",
+		"queued": "Report queued for {count} recipient | Report queued for {count} recipients"
+	},
+	"sentEmails": {
+		"title": "Sent emails",
+		"hint": "The last 100 emails, newest first.",
+		"refresh": "Refresh",
+		"empty": "No emails sent yet.",
+		"when": "When",
+		"kind": "Email",
+		"recipient": "To",
+		"status": "Status",
+		"retry": "Retry",
+		"retried": "Email queued to send again",
+		"nextAttempt": "Next try {time}",
+		"kinds": {
+			"test_email": "Test email",
+			"password_reset": "Password reset",
+			"paystub": "Pay stub",
+			"monthly_report": "Monthly report"
+		},
+		"statuses": {
+			"pending": "Sending",
+			"sent": "Sent",
+			"failed": "Failed"
+		}
 	}
 }

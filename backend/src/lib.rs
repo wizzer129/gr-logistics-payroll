@@ -23,7 +23,7 @@ pub use routes::build_app;
 
 use crate::{
 	config::Config,
-	email::{outbox::Outbox, render::Renderer, sender},
+	email::{outbox::Outbox, render::Renderer, scheduler, sender},
 	state::AppState,
 };
 
@@ -47,15 +47,17 @@ pub async fn serve(config: Config) -> anyhow::Result<()> {
 		sender::from_config(&config.email),
 		Arc::new(Renderer::new()),
 	);
+	let scheduler_pool = pool.clone();
 	let state = AppState {
 		pool,
 		config: Arc::new(config),
 	};
 
-	// One signal stops both: the HTTP server drains in-flight requests, and the outbox
-	// worker finishes the send it's on.
+	// One signal stops all three: the HTTP server drains in-flight requests, the outbox
+	// worker finishes the send it's on, and the scheduler finishes its check.
 	let (shutdown_tx, shutdown_rx) = watch::channel(false);
-	let worker = tokio::spawn(outbox.run(shutdown_rx));
+	let worker = tokio::spawn(outbox.run(shutdown_rx.clone()));
+	let scheduler = tokio::spawn(scheduler::run(scheduler_pool, shutdown_rx));
 
 	let listener = TcpListener::bind(("0.0.0.0", port)).await?;
 	tracing::info!(port, "backend listening");
@@ -68,6 +70,7 @@ pub async fn serve(config: Config) -> anyhow::Result<()> {
 		.await?;
 
 	worker.await?;
+	scheduler.await?;
 	Ok(())
 }
 

@@ -124,6 +124,11 @@ Designed in [EMAIL-SPEC.md](./EMAIL-SPEC.md); that file tracks which phases are 
   an email) sends ids, and `services::email_recipients::resolve()` turns them into
   addresses, each in its recipient's saved language (`users.locale` follows the UI's,
   `employees.locale` is on the employee form).
+- **The monthly report buckets paychecks by payday**, not `week_start` like the dashboard
+  (decided with the owner: it's a record of money paid out that month). The scheduler
+  (`email/scheduler.rs`) sends it from 08:00 America/Los_Angeles on the 1st, catching up
+  through the 7th; `monthly_report_runs` makes that exactly once. Settings has "Send now"
+  and the "Sent emails" panel (outbox history, retry for failed emails).
 - Dev uses `EMAIL_PROVIDER=log` (emails land in `backend/target/emails/`); production refuses
   it and needs `resend` plus `RESEND_API_KEY` and `EMAIL_FROM`. After a deploy, check sending
   with `gr-logistics send-test-email --to <you>`.

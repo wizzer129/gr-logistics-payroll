@@ -193,7 +193,9 @@
 		"RESET_TOKEN_INVALID": "Este enlace no es válido, ya se usó o venció.",
 		"RECIPIENT_NOT_FOUND": "Uno de los destinatarios elegidos ya no puede recibir correos. Recargue e intente de nuevo.",
 		"NO_RECIPIENTS": "Elija al menos una persona a quien enviarlo.",
-		"PAYCHECK_NOT_COMPLETED": "Solo se puede enviar por correo un pago completado."
+		"PAYCHECK_NOT_COMPLETED": "Solo se puede enviar por correo un pago completado.",
+		"OUTBOX_EMAIL_NOT_FOUND": "Correo no encontrado",
+		"EMAIL_NOT_RETRYABLE": "Este correo no se puede volver a enviar"
 	},
 	"unsaved": {
 		"title": "¿Descartar cambios sin guardar?",
@@ -221,5 +223,38 @@
 		"send": "Enviar",
 		"queued": "Talón en cola para {count} destinatario | Talón en cola para {count} destinatarios",
 		"saveFirst": "Guarde sus cambios primero: el correo envía el talón guardado."
+	},
+	"monthlyReport": {
+		"sendTitle": "Enviar un reporte ahora",
+		"sendHint": "Envía el reporte de un mes de inmediato: para reenviarlo o para un mes que el envío automático no cubrió.",
+		"month": "Mes",
+		"recipients": "Enviar a",
+		"recipientsHint": "Déjalo vacío para enviarlo a los destinatarios del reporte mensual.",
+		"send": "Enviar ahora",
+		"queued": "Reporte en cola para {count} destinatario | Reporte en cola para {count} destinatarios"
+	},
+	"sentEmails": {
+		"title": "Correos enviados",
+		"hint": "Los últimos 100 correos, del más reciente al más antiguo.",
+		"refresh": "Actualizar",
+		"empty": "Aún no se ha enviado ningún correo.",
+		"when": "Fecha",
+		"kind": "Correo",
+		"recipient": "Para",
+		"status": "Estado",
+		"retry": "Reintentar",
+		"retried": "Correo en cola para enviarse de nuevo",
+		"nextAttempt": "Próximo intento {time}",
+		"kinds": {
+			"test_email": "Correo de prueba",
+			"password_reset": "Restablecer contraseña",
+			"paystub": "Talón de pago",
+			"monthly_report": "Reporte mensual"
+		},
+		"statuses": {
+			"pending": "Enviando",
+			"sent": "Enviado",
+			"failed": "Falló"
+		}
 	}
 }

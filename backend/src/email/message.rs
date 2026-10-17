@@ -1,6 +1,7 @@
 //! What can be emailed. A [`Message`] is the outbox payload: it says _what_ to send, and the
 //! worker turns it into an email at send time (EMAIL-SPEC.md §5).
 
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -17,6 +18,9 @@ pub enum Message {
 	PasswordReset { reset_url: String },
 	/// Rendered from the log as it is when the email goes out, with the PDF attached.
 	Paystub { paycheck_log_id: Uuid },
+	/// The month starting on `month` (always the 1st), with the PDF attached. Built from the
+	/// data as it is at send time.
+	MonthlyReport { month: NaiveDate },
 }
 
 impl Message {
@@ -25,6 +29,7 @@ impl Message {
 			Self::TestEmail { .. } => "test_email",
 			Self::PasswordReset { .. } => "password_reset",
 			Self::Paystub { .. } => "paystub",
+			Self::MonthlyReport { .. } => "monthly_report",
 		}
 	}
 
@@ -35,6 +40,7 @@ impl Message {
 			Self::TestEmail { .. } => "test-email",
 			Self::PasswordReset { .. } => "password-reset",
 			Self::Paystub { .. } => "paystub",
+			Self::MonthlyReport { .. } => "monthly-report",
 		}
 	}
 }

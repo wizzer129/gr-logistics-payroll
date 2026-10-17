@@ -1,6 +1,6 @@
 # Email Service — Spec
 
-Status: **Phases 1–4 built** (foundation, password reset, recipients, paystub email); Phase 5 (monthly report) to do (§13). Covers the three
+Status: **all five phases built** (foundation, password reset, recipients, paystub email, monthly report; §13). Covers the three
 "Accounts & email" items in [TODO.md](./TODO.md) (email service, password reset, email
 recipients) plus emailed paystubs and monthly reports. Conventions in [AGENTS.md](./AGENTS.md) apply throughout
 (error codes, i18n, `services/` owns SQL, explicit roles, money as `Decimal`, …).
@@ -437,20 +437,26 @@ pre-selected when they have an email) opens from:
 
 ### Monthly report
 
-**Contents** (previous calendar month, completed logs only, grouped by `week_start`, the
-same bucketing as the dashboard):
+**Contents** (decided 2026-10-16). A paycheck belongs to the month of its **payday**, when
+the money went out (unlike the dashboard, which buckets by `week_start`). Completed logs
+only:
 
-- the month's total paid, gross and paycheck count
-- one row per employee: paychecks, loads, gross, cut
-- a page listing each paycheck
+- the month's total paid, gross, paycheck count and load count, each with its change
+  against the month before (`+12% vs. August 2026`; a dash when that month had nothing)
+- one row per employee: paychecks, loads, gross, paid, and a total row
+- drafts with a payday in the month are left out of every number, but a warning says how
+  many there are, so nothing goes missing silently
 
-The email body carries the headline numbers, and the PDF has the detail.
+The email body carries the headline numbers and the drafts warning; the PDF
+(`templates/pdf/monthly-report.typ`, `src/pdf/monthly_report.rs`) has the per-employee table.
+SQL in `services/monthly_report.rs`, the hourly check in `email/scheduler.rs`.
 
 **Automatic:** a `scheduler.rs` task in `serve` checks hourly. On or after the 1st of the
 month at 08:00 **America/Los_Angeles** (a constant, via `chrono-tz`), it enqueues the previous month's report
 exactly once:
 
 ```sql
+-- migration 0013_monthly_report_runs.sql
 CREATE TABLE monthly_report_runs (
 	month date PRIMARY KEY,          -- first day of the reported month
 	outbox_ids uuid[] NOT NULL,
@@ -468,21 +474,23 @@ manual send.
 
 **Manual:** `POST /api/email/monthly-report` `{ month: "YYYY-MM", userIds?: uuid[] }`
 (admin) sends now, regardless of `monthly_report_runs`, for a resend or an earlier month.
-Without `userIds` it goes to the opted-in users.
+Without `userIds` it goes to the opted-in users. With nobody opted in, the scheduler records
+nothing, so adding a recipient later that week still gets the month's report out.
 
 ## 9. API summary
 
-| Method & path                              | Role          | Purpose                                                                       |
-| ------------------------------------------ | ------------- | ----------------------------------------------------------------------------- |
-| `POST /api/auth/password-reset`            | public        | request a reset link (always 202)                                             |
-| `POST /api/auth/password-reset/confirm`    | public        | set a new password with a token                                               |
-| `PUT /api/auth/me/locale`                  | any logged-in | save the user's UI language: `{ locale }`                                     |
-| `GET /api/email/recipient-options`         | admin         | `{ users: [{ id, email }], employees: [{ id, firstName, lastName, email }] }` |
-| `GET /api/email/monthly-report/recipients` | admin         | ids of users with `receives_monthly_report`                                   |
-| `PUT /api/email/monthly-report/recipients` | admin         | replace that set: `{ userIds }`                                               |
-| `POST /api/paycheck-logs/{id}/email`       | admin         | email a paystub: `{ userIds, employeeIds }`                                   |
-| `POST /api/email/monthly-report`           | admin         | send a month's report now                                                     |
-| `GET /api/email/outbox?kind=&status=`      | admin         | recent sends with status/error, for a "Sent emails" panel                     |
+| Method & path                              | Role          | Purpose                                                                        |
+| ------------------------------------------ | ------------- | ------------------------------------------------------------------------------ |
+| `POST /api/auth/password-reset`            | public        | request a reset link (always 202)                                              |
+| `POST /api/auth/password-reset/confirm`    | public        | set a new password with a token                                                |
+| `PUT /api/auth/me/locale`                  | any logged-in | save the user's UI language: `{ locale }`                                      |
+| `GET /api/email/recipient-options`         | admin         | `{ users: [{ id, email }], employees: [{ id, firstName, lastName, email }] }`  |
+| `GET /api/email/monthly-report/recipients` | admin         | ids of users with `receives_monthly_report`                                    |
+| `PUT /api/email/monthly-report/recipients` | admin         | replace that set: `{ userIds }`                                                |
+| `POST /api/paycheck-logs/{id}/email`       | admin         | email a paystub: `{ userIds, employeeIds }`                                    |
+| `POST /api/email/monthly-report`           | admin         | send a month's report now                                                      |
+| `GET /api/email/outbox`                    | admin         | the last 100 emails with status/error, for the "Sent emails" panel             |
+| `POST /api/email/outbox/{id}/retry`        | admin         | send a failed email again, with fresh attempts (not a scrubbed password reset) |
 
 Every handler declares its role explicitly (AGENTS.md). `PUT /api/auth/me/locale` takes
 `&[Role::Admin, Role::Employee]`, since it only touches the caller's own row.
@@ -498,6 +506,8 @@ otherwise.
 | `NO_RECIPIENTS`          | 400    | a send with nobody to send to                                    |
 | `RECIPIENT_NOT_FOUND`    | 400    | an id that isn't a user, or an active employee with an email     |
 | `PAYCHECK_NOT_COMPLETED` | 409    | emailing a draft                                                 |
+| `OUTBOX_EMAIL_NOT_FOUND` | 404    | retrying an email id that doesn't exist                          |
+| `EMAIL_NOT_RETRYABLE`    | 409    | retrying one that isn't failed, or a password reset (scrubbed)   |
 | `EMAIL_NOT_CONFIGURED`   | 503    | provider is `log` in production (startup prevents this, see §10) |
 
 ## 10. Config & secrets
@@ -563,10 +573,8 @@ Frontend side: `maizzle` and `tailwindcss` in the new `emails/` workspace only.
 | Timezone            | **America/Los_Angeles** for the monthly report tick                                                                                                                                                                                                                                                                                             |
 | Reset link lifetime | **1 hour** (confirmed): long enough to switch to the inbox, short enough that a forwarded or leaked email is useless soon after                                                                                                                                                                                                                 |
 
-Still open:
-
-- **Monthly report contents.** Are the numbers in §8 the right ones? Should drafts appear
-  as a "not yet completed" note? This doesn't block Phases 1–4.
+| Monthly report | **By payday**; totals + per-employee table + change vs. last month; drafts excluded with a warning (§8) |
+| Sent emails panel | In Settings, with **retry** for failed emails |
 
 ## 13. Phases
 

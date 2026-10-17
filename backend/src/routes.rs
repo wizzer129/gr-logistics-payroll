@@ -70,6 +70,12 @@ pub fn build_app(state: AppState) -> Router {
 			get(email::monthly_report_recipients).put(email::set_monthly_report_recipients),
 		)
 		.route(
+			"/api/email/monthly-report",
+			post(email::send_monthly_report),
+		)
+		.route("/api/email/outbox", get(email::outbox))
+		.route("/api/email/outbox/{id}/retry", post(email::retry_email))
+		.route(
 			"/api/dashboard/employee/{id}/summary",
 			get(dashboard::employee_summary),
 		)

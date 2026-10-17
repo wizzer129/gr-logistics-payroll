@@ -41,6 +41,24 @@ pub async fn monthly_report_user_ids(pool: &PgPool) -> Result<Vec<Uuid>, sqlx::E
 		.await
 }
 
+/// The users opted in to the monthly report, as addresses.
+pub async fn monthly_report_recipients(
+	conn: &mut PgConnection,
+) -> Result<Vec<Recipient>, sqlx::Error> {
+	let rows: Vec<(String, String)> = sqlx::query_as(
+		"SELECT email, locale FROM users WHERE receives_monthly_report ORDER BY email",
+	)
+	.fetch_all(&mut *conn)
+	.await?;
+	Ok(rows
+		.into_iter()
+		.map(|(email, locale)| Recipient {
+			email,
+			locale: Locale::parse(&locale).unwrap_or(Locale::En),
+		})
+		.collect())
+}
+
 /// Makes exactly `user_ids` the monthly report's recipients. `false` (and no change) if any
 /// id isn't a user.
 pub async fn set_monthly_report_users(

@@ -45,5 +45,30 @@
 		"employee_cut": "Employee Cut ({rate}%)",
 		"total_pay": "Total Pay",
 		"no_loads": "No loads"
+	},
+	"monthly_report": {
+		"subject": "Monthly report: {{ month }}",
+		"heading": "Monthly report",
+		"total_paid": "Total paid",
+		"gross": "Gross",
+		"paychecks": "Paychecks",
+		"attached": "The full report, with a row per employee, is attached as a PDF.",
+		"filename": "monthly-report"
+	},
+	"monthly_report_pdf": {
+		"company": "GR Logistics",
+		"title": "Monthly Report",
+		"total_paid": "Total Paid",
+		"gross": "Gross",
+		"paychecks": "Paychecks",
+		"loads": "Loads",
+		"paid": "Paid",
+		"employee": "Employee",
+		"by_employee": "By employee",
+		"total": "Total",
+		"vs_previous": "vs. {month}",
+		"no_paychecks": "No completed paychecks with a payday this month.",
+		"drafts_one": "{count} paycheck with a payday in {month} is still a draft and isn't counted here.",
+		"drafts_other": "{count} paychecks with a payday in {month} are still drafts and aren't counted here."
 	}
 }

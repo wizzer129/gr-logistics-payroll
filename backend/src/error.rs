@@ -37,11 +37,13 @@ pub enum ErrorCode {
 	NotFound,
 	EmployeeNotFound,
 	PaycheckLogNotFound,
+	OutboxEmailNotFound,
 	// 405
 	MethodNotAllowed,
 	// 409
 	DuplicateWeek,
 	PaycheckNotCompleted,
+	EmailNotRetryable,
 	// 500 / 503
 	InternalError,
 	RequestTimeout,

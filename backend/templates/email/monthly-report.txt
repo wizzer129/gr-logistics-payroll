@@ -1,0 +1,31 @@
+
+
+GR Logistics
+
+{{ t.monthly_report.heading }}
+
+{{ month }}
+
+{{ t.monthly_report.total_paid }}
+
+{{ total_paid }}
+
+{{ paid_change }}
+
+{{ t.monthly_report.gross }}
+
+{{ gross }}
+
+{{ t.monthly_report.paychecks }}
+
+{{ paychecks }}
+
+{% if drafts_note %}
+
+{{ drafts_note }}
+
+{% endif %}
+{{ t.monthly_report.attached }}
+
+{{ t.common.footer }}
+

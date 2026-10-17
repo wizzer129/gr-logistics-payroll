@@ -1,5 +1,6 @@
 //! DTOs for the email controller (`handlers/email.rs`, EMAIL-SPEC.md §6 and §9).
 
+use chrono::{DateTime, NaiveDate, Utc};
 use garde::Validate;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -52,4 +53,57 @@ pub struct SendTo {
 #[serde(rename_all = "camelCase")]
 pub struct Queued {
 	pub outbox_ids: Vec<Uuid>,
+}
+
+/// `POST /api/email/monthly-report`: send a month's report now. Without `userIds` it goes to
+/// the opted-in users.
+#[derive(Debug, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct SendMonthlyReport {
+	/// `YYYY-MM`.
+	#[garde(custom(year_month))]
+	pub month: String,
+	#[serde(default)]
+	#[garde(skip)]
+	pub user_ids: Option<Vec<Uuid>>,
+}
+
+impl SendMonthlyReport {
+	/// The month's 1st. Only call after validation.
+	pub fn first_day(&self) -> Option<NaiveDate> {
+		parse_year_month(&self.month)
+	}
+}
+
+fn parse_year_month(value: &str) -> Option<NaiveDate> {
+	if value.len() != 7 {
+		return None;
+	}
+	NaiveDate::parse_from_str(&format!("{value}-01"), "%Y-%m-%d").ok()
+}
+
+fn year_month(value: &str, _ctx: &()) -> garde::Result {
+	match parse_year_month(value) {
+		Some(_) => Ok(()),
+		None => Err(garde::Error::new("must be a month as YYYY-MM")),
+	}
+}
+
+/// One row of the "Sent emails" panel.
+#[derive(Debug, Serialize, sqlx::FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct OutboxEntry {
+	pub id: Uuid,
+	pub kind: String,
+	pub recipient: String,
+	pub status: String,
+	pub attempts: i32,
+	pub subject: Option<String>,
+	pub last_error: Option<String>,
+	pub created_at: DateTime<Utc>,
+	pub sent_at: Option<DateTime<Utc>>,
+	pub next_attempt_at: DateTime<Utc>,
+	/// A failed email that still has what it needs to be rebuilt (a sent or failed password
+	/// reset has had its link scrubbed, so it can't be).
+	pub retryable: bool,
 }

@@ -6,6 +6,7 @@ pub mod dashboard;
 pub mod email_outbox;
 pub mod email_recipients;
 pub mod employees;
+pub mod monthly_report;
 pub mod password_resets;
 pub mod paycheck_logs;
 pub mod paystubs;

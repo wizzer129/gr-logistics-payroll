@@ -169,6 +169,14 @@ mod tests {
 					"payday": "Oct 16, 2026", "total_pay": "$441.00",
 				}),
 			),
+			(
+				"monthly-report",
+				json!({
+					"month": "September 2026", "total_paid": "$2,100.00",
+					"paid_change": "+40% vs. August 2026", "gross": "$5,000.50",
+					"paychecks": "6", "drafts_note": "SAMPLE-1",
+				}),
+			),
 		];
 		let built: BTreeSet<_> = TEMPLATES
 			.files()
@@ -205,6 +213,27 @@ mod tests {
 			.render("paystub", Locale::En, samples_paystub())
 			.unwrap();
 		assert_eq!(paystub.subject, "Pay stub: Ana Diaz · Oct 4 – Oct 10, 2026");
+	}
+
+	#[test]
+	fn the_drafts_note_shows_only_when_there_are_drafts() {
+		let renderer = Renderer::new();
+		let context = |note: &str| {
+			json!({
+				"month": "September 2026", "total_paid": "$0.00", "paid_change": "",
+				"gross": "$0.00", "paychecks": "0", "drafts_note": note,
+			})
+		};
+		let with = renderer
+			.render("monthly-report", Locale::En, context("DRAFTS-NOTE"))
+			.unwrap();
+		assert!(with.html.contains("DRAFTS-NOTE"));
+		let without = renderer
+			.render("monthly-report", Locale::En, context(""))
+			.unwrap();
+		assert!(!without.html.contains("#fffbeb"), "no empty warning box");
+		assert!(with.html.contains("#fffbeb"), "the warning box");
+		assert_eq!(with.subject, "Monthly report: September 2026");
 	}
 
 	fn samples_paystub() -> Value {

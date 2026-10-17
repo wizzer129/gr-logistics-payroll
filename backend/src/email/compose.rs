@@ -5,7 +5,11 @@ use serde_json::{Value, json};
 use sqlx::PgPool;
 
 use super::{message::Message, render::Renderer, sender::Attachment};
-use crate::{locale::Locale, pdf, services::paystubs};
+use crate::{
+	locale::Locale,
+	pdf,
+	services::{monthly_report, paystubs},
+};
 
 pub struct Composed {
 	pub template: &'static str,
@@ -63,21 +67,60 @@ pub async fn compose(
 				source.week_start,
 			);
 
-			let bytes = tokio::task::spawn_blocking(move || pdf::paystub(&document))
-				.await
-				.map_err(|error| ComposeError::Permanent(format!("pdf task failed: {error}")))?
-				.map_err(ComposeError::Permanent)?;
-
+			let bytes = render_pdf(move || pdf::paystub(&document)).await?;
 			Ok(Composed {
 				template,
 				context,
-				attachments: vec![Attachment {
-					filename,
-					content_type: "application/pdf".into(),
-					bytes,
-				}],
+				attachments: vec![pdf_attachment(filename, bytes)],
 			})
 		}
+		Message::MonthlyReport { month } => {
+			let source = monthly_report::source(pool, *month).await?;
+			let strings = renderer.strings(locale);
+			let document =
+				pdf::monthly_report::document(&source, locale, &strings["monthly_report_pdf"]);
+			let context = json!({
+				"month": document.month,
+				"total_paid": document.paid.value,
+				"paid_change": document.paid.change.as_ref()
+					.map(|change| format!("{change} {}", document.vs_previous))
+					.unwrap_or_default(),
+				"gross": document.gross.value,
+				"paychecks": document.paychecks.value,
+				"drafts_note": document.drafts_note.clone().unwrap_or_default(),
+			});
+			let filename = format!(
+				"{}-{}.pdf",
+				strings["monthly_report"]["filename"]
+					.as_str()
+					.unwrap_or("monthly-report"),
+				month.format("%Y-%m"),
+			);
+			let bytes = render_pdf(move || pdf::monthly_report(&document)).await?;
+			Ok(Composed {
+				template,
+				context,
+				attachments: vec![pdf_attachment(filename, bytes)],
+			})
+		}
+	}
+}
+
+/// Typst is CPU-bound, so it runs on the blocking pool.
+async fn render_pdf(
+	render: impl FnOnce() -> Result<Vec<u8>, String> + Send + 'static,
+) -> Result<Vec<u8>, ComposeError> {
+	tokio::task::spawn_blocking(render)
+		.await
+		.map_err(|error| ComposeError::Permanent(format!("pdf task failed: {error}")))?
+		.map_err(ComposeError::Permanent)
+}
+
+fn pdf_attachment(filename: String, bytes: Vec<u8>) -> Attachment {
+	Attachment {
+		filename,
+		content_type: "application/pdf".into(),
+		bytes,
 	}
 }
 

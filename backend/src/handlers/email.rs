@@ -7,8 +7,13 @@ use crate::{
 	email::{self, Message},
 	error::{AppError, AppResult, ErrorCode},
 	extract::{IdPath, ValidatedJson},
-	models::email::{MonthlyReportRecipients, Queued, RecipientOptions, SendTo},
-	services::{email_recipients, paystubs},
+	models::email::{
+		MonthlyReportRecipients, OutboxEntry, Queued, RecipientOptions, SendMonthlyReport, SendTo,
+	},
+	services::{
+		email_outbox::{self, Retry},
+		email_recipients, paystubs,
+	},
 	state::AppState,
 };
 
@@ -95,20 +100,85 @@ pub async fn send_paystub(
 	let message = Message::Paystub {
 		paycheck_log_id: id,
 	};
-	let mut outbox_ids = Vec::with_capacity(recipients.len());
-	for recipient in &recipients {
-		outbox_ids.push(
-			email::enqueue(
-				&mut tx,
-				&message,
-				&recipient.email,
-				recipient.locale,
-				Some(user.id),
-			)
-			.await?,
-		);
-	}
+	let outbox_ids = email::enqueue_for_each(&mut tx, &message, &recipients, Some(user.id)).await?;
 	tx.commit().await?;
 
 	Ok((StatusCode::ACCEPTED, Json(Queued { outbox_ids })))
+}
+
+/// POST /api/email/monthly-report — queues a month's report now, whatever the scheduler has
+/// done: for a resend, an earlier month, or a month outside its catch-up window.
+pub async fn send_monthly_report(
+	user: AuthUser,
+	State(state): State<AppState>,
+	ValidatedJson(body): ValidatedJson<SendMonthlyReport>,
+) -> AppResult<(StatusCode, Json<Queued>)> {
+	user.require_role(&[Role::Admin])?;
+	let month = body
+		.first_day()
+		.ok_or_else(|| anyhow::anyhow!("month passed validation but didn't parse"))?;
+
+	let mut tx = state.pool.begin().await?;
+	let recipients = match &body.user_ids {
+		Some(user_ids) => email_recipients::resolve(&mut tx, user_ids, &[])
+			.await?
+			.ok_or_else(|| {
+				AppError::BadRequest(ErrorCode::RecipientNotFound, "Unknown user id".into())
+			})?,
+		None => email_recipients::monthly_report_recipients(&mut tx).await?,
+	};
+	if recipients.is_empty() {
+		return Err(AppError::BadRequest(
+			ErrorCode::NoRecipients,
+			"Nobody to send the report to".into(),
+		));
+	}
+
+	let message = Message::MonthlyReport { month };
+	let outbox_ids = email::enqueue_for_each(&mut tx, &message, &recipients, Some(user.id)).await?;
+	tx.commit().await?;
+
+	Ok((StatusCode::ACCEPTED, Json(Queued { outbox_ids })))
+}
+
+/// How many rows the "Sent emails" panel shows.
+const RECENT_EMAILS: i64 = 100;
+
+/// GET /api/email/outbox — the most recent emails and how each one went.
+pub async fn outbox(
+	user: AuthUser,
+	State(state): State<AppState>,
+) -> AppResult<Json<Vec<OutboxEntry>>> {
+	user.require_role(&[Role::Admin])?;
+	Ok(Json(
+		email_outbox::recent(&state.pool, RECENT_EMAILS).await?,
+	))
+}
+
+/// POST /api/email/outbox/{id}/retry — sends a failed email again.
+pub async fn retry_email(
+	user: AuthUser,
+	State(state): State<AppState>,
+	IdPath(id): IdPath,
+) -> AppResult<StatusCode> {
+	user.require_role(&[Role::Admin])?;
+
+	let mut tx = state.pool.begin().await?;
+	match email_outbox::retry(&mut tx, id).await? {
+		Retry::Queued => {}
+		Retry::NotFound => {
+			return Err(AppError::NotFound(
+				ErrorCode::OutboxEmailNotFound,
+				"Email not found".into(),
+			));
+		}
+		Retry::NotRetryable => {
+			return Err(AppError::Conflict(
+				ErrorCode::EmailNotRetryable,
+				"Only a failed email that can still be rebuilt can be retried".into(),
+			));
+		}
+	}
+	tx.commit().await?;
+	Ok(StatusCode::ACCEPTED)
 }
