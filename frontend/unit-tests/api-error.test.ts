@@ -1,18 +1,14 @@
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import en from '../src/locales/en.json';
 import es from '../src/locales/es.json';
 import { i18n } from '../src/plugins/i18n';
 import { ApiError, apiError, apiFetch, apiJson, apiRequest } from '../src/utils/api';
+// Vite's `?raw` import, so the test needs no Node types (`tsconfig.json` has only Vite's).
+import errorRs from '../../backend/src/error.rs?raw';
 
 // The backend's `ErrorCode` variants, as their serialized SCREAMING_SNAKE_CASE names.
 function backendErrorCodes(): string[] {
-	// A string path: happy-dom's `URL` global isn't one `readFileSync` accepts.
-	const here = dirname(fileURLToPath(import.meta.url));
-	const source = readFileSync(join(here, '../../backend/src/error.rs'), 'utf8');
-	const body = source.match(/pub enum ErrorCode \{([^}]*)\}/)?.[1] ?? '';
+	const body = errorRs.match(/pub enum ErrorCode \{([^}]*)\}/)?.[1] ?? '';
 	return [...body.matchAll(/^\s*([A-Z]\w*),/gm)].map(([, name]) =>
 		name.replace(/(?<!^)([A-Z])/g, '_$1').toUpperCase(),
 	);
