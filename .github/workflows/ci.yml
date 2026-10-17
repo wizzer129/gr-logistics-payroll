@@ -6,8 +6,43 @@ on:
     pull_request:
         branches: [main]
 
+# Every job runs in parallel on its own runner, so the run takes as long as its slowest job
+# (backend-test). Each job does its own setup; that's a few seconds of duplicated
+# `bun install` / toolchain setup in exchange for not queuing. `changes` (a few seconds)
+# skips the backend jobs on a frontend-only push and the reverse.
 jobs:
-    lint:
+    changes:
+        runs-on: ubuntu-latest
+        outputs:
+            backend: ${{ steps.filter.outputs.backend }}
+            frontend: ${{ steps.filter.outputs.frontend }}
+            emails: ${{ steps.filter.outputs.emails }}
+        steps:
+            - uses: actions/checkout@v4
+            - uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  filters: |
+                      backend:
+                          - 'backend/**'
+                          - '.github/workflows/ci.yml'
+                      frontend:
+                          - 'frontend/**'
+                          - 'package.json'
+                          - 'bun.lock'
+                          - 'eslint.config.js'
+                          # frontend/unit-tests/api-error.test.ts checks every ErrorCode is translated.
+                          - 'backend/src/error.rs'
+                          - '.github/workflows/ci.yml'
+                      emails:
+                          - 'emails/**'
+                          - 'backend/templates/email/**'
+                          - 'package.json'
+                          - 'bun.lock'
+                          - '.github/workflows/ci.yml'
+
+    # Always runs: Prettier checks the whole repo (docs, YAML, …), not just the frontend.
+    lint-frontend:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -15,11 +50,21 @@ jobs:
               with:
                   bun-version: 1.4.3
             - run: bun install
-            # Backend lint/format (clippy, cargo fmt) run in backend-test, which has Rust.
             - run: bun run lint:frontend
             - run: bun run format:check:frontend
-            # The backend embeds the Maizzle build output, which is committed; fail if it's
-            # stale or missing (status, not diff, so new untracked files count too).
+
+    # The backend embeds the Maizzle build output, which is committed; fail if it's stale or
+    # missing (status, not diff, so new untracked files count too).
+    email-templates:
+        needs: changes
+        if: needs.changes.outputs.emails == 'true'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.3
+            - run: bun install
             - run: bun run emails:build
             - run: |
                   stale=$(git status --porcelain backend/templates/email)
@@ -29,7 +74,34 @@ jobs:
                       exit 1
                   fi
 
+    # Separate from backend-test: clippy only type-checks, so it can't share a build with
+    # `cargo test` anyway. Each job keeps its own rust-cache (keyed by job).
+    backend-lint:
+        needs: changes
+        if: needs.changes.outputs.backend == 'true'
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: backend
+        steps:
+            - uses: actions/checkout@v4
+            # Keep in sync with backend/rust-toolchain.toml.
+            - uses: dtolnay/rust-toolchain@master
+              with:
+                  toolchain: '1.99'
+                  components: rustfmt, clippy
+            - uses: Swatinem/rust-cache@v2
+              with:
+                  workspaces: backend
+                  # Only main saves: PR caches would push main's out of the 10 GB limit.
+                  save-if: ${{ github.ref == 'refs/heads/main' }}
+            # Same checks as `bun run format:check:backend` / `bun run lint:backend`.
+            - run: cargo fmt --check
+            - run: cargo clippy --all-targets --locked -- -D warnings
+
     backend-test:
+        needs: changes
+        if: needs.changes.outputs.backend == 'true'
         runs-on: ubuntu-latest
         services:
             postgres:
@@ -56,16 +128,16 @@ jobs:
             - uses: dtolnay/rust-toolchain@master
               with:
                   toolchain: '1.99'
-                  components: rustfmt, clippy
             - uses: Swatinem/rust-cache@v2
               with:
                   workspaces: backend
-            # Same checks as `bun run format:check:backend` / `bun run lint:backend`.
-            - run: cargo fmt --check
-            - run: cargo clippy --all-targets --locked -- -D warnings
+                  # Only main saves: PR caches would push main's out of the 10 GB limit.
+                  save-if: ${{ github.ref == 'refs/heads/main' }}
             - run: cargo test --locked
 
     frontend-test:
+        needs: changes
+        if: needs.changes.outputs.frontend == 'true'
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -76,12 +148,26 @@ jobs:
               working-directory: frontend
             - run: bun run test
               working-directory: frontend
+
+    # `vue-tsc` type check + Vite build.
+    frontend-build:
+        needs: changes
+        if: needs.changes.outputs.frontend == 'true'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.3
+            - run: bun install
+              working-directory: frontend
             - run: bun run build
               working-directory: frontend
 
     e2e:
+        needs: changes
+        if: needs.changes.outputs.frontend == 'true'
         runs-on: ubuntu-latest
-        needs: [frontend-test]
         steps:
             - uses: actions/checkout@v4
             - uses: oven-sh/setup-bun@v2

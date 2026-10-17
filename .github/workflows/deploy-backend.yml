@@ -1,35 +1,20 @@
-name: Deploy
+name: Deploy backend
 
+# Only when something the image is built from changed (or by hand from the Actions tab): the
+# image build is the slowest thing in the pipeline.
 on:
     push:
         branches: [main]
+        paths:
+            - 'backend/**'
+            - '.github/workflows/deploy-backend.yml'
+    workflow_dispatch:
 
 env:
     REGISTRY: ghcr.io
     IMAGE_NAME: ${{ github.repository }}-backend
 
 jobs:
-    deploy-frontend:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-            - uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: 1.4.3
-            - run: bun install
-              working-directory: frontend
-            - run: bun run build
-              working-directory: frontend
-              env:
-                  # The API's own origin (api.<domain>) — without it the SPA's '/api/...'
-                  # requests would hit Cloudflare Pages itself. See frontend/src/utils/api.ts.
-                  VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
-            - uses: cloudflare/wrangler-action@v3
-              with:
-                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-                  command: pages deploy frontend/dist --project-name=gr-logistics
-
     build-backend-image:
         runs-on: ubuntu-latest
         permissions:

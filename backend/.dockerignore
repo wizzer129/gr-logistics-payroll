@@ -5,3 +5,7 @@ target
 .env.schema
 Dockerfile
 .dockerignore
+# The image tag in the Dockerfile pins the toolchain (1.99.0). With this file in the context,
+# `cargo build` saw channel "1.99", auto-installed it as a second toolchain and recompiled
+# every dependency `cargo chef cook` had just built (~6 minutes per deploy).
+rust-toolchain.toml
