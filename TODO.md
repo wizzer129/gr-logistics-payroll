@@ -7,15 +7,11 @@ column on `users` plus a migration, and `/api/auth/me` returning it).
 
 Accounts & email (design: EMAIL-SPEC.md):
 
-- Email service (backend): sends paystubs and password-reset emails. Templates built with
-  Maizzle. Pick a sending provider and add its credentials to backend/.env.schema +
-  config.rs (REQUIRED/OPTIONAL_KEYS) and deploy/backend.env.example.
-- Password reset: "Forgot password?" on the login view → emailed one-time link → set a new
-  password. Needs a reset-token table (hashed token, expiry, single use) and invalidating the
-  user's existing sessions on reset. Don't reveal whether an email has an account.
-- Email recipients setting: a settings page where a user manages their preferred email targets
-  (e.g. where paystubs/reports get sent). Stored per user in a new table (migration), with
-  add/remove endpoints behind the usual role check.
+- Monthly report email (EMAIL-SPEC.md Phase 5): report query, `monthly-report.typ` PDF,
+  the scheduler (1st of the month, 08:00 America/Los_Angeles) + `monthly_report_runs`,
+  manual "Send now", and a "Sent emails" panel over `email_outbox`. Decide the report's
+  contents first (spec §8). Phases 1–4 (outbox, password reset, recipients, paystub
+  email) are built.
 
 Backend (left over from the Rust rewrite):
 

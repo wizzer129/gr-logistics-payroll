@@ -2,34 +2,9 @@
 //! worker turns it into an email at send time (EMAIL-SPEC.md §5).
 
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use uuid::Uuid;
 
-/// The language an email is rendered in: its recipient's.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Locale {
-	En,
-	Es,
-}
-
-impl Locale {
-	pub const ALL: [Self; 2] = [Self::En, Self::Es];
-
-	pub fn as_str(self) -> &'static str {
-		match self {
-			Self::En => "en",
-			Self::Es => "es",
-		}
-	}
-
-	pub fn parse(value: &str) -> Option<Self> {
-		match value {
-			"en" => Some(Self::En),
-			"es" => Some(Self::Es),
-			_ => None,
-		}
-	}
-}
+pub use crate::locale::Locale;
 
 /// One variant per kind of email. The serialized tag is the outbox `kind` and must match
 /// that column's CHECK constraint (migration 0010).
@@ -40,6 +15,8 @@ pub enum Message {
 	TestEmail { sent_at: String },
 	/// The link carries a live token, so the outbox scrubs this payload once it's sent.
 	PasswordReset { reset_url: String },
+	/// Rendered from the log as it is when the email goes out, with the PDF attached.
+	Paystub { paycheck_log_id: Uuid },
 }
 
 impl Message {
@@ -47,6 +24,7 @@ impl Message {
 		match self {
 			Self::TestEmail { .. } => "test_email",
 			Self::PasswordReset { .. } => "password_reset",
+			Self::Paystub { .. } => "paystub",
 		}
 	}
 
@@ -56,15 +34,7 @@ impl Message {
 		match self {
 			Self::TestEmail { .. } => "test-email",
 			Self::PasswordReset { .. } => "password-reset",
-		}
-	}
-
-	/// The template variables besides `t` (the locale strings). Everything is a string:
-	/// money and dates arrive here already formatted.
-	pub fn context(&self) -> Value {
-		match self {
-			Self::TestEmail { sent_at } => json!({ "sent_at": sent_at }),
-			Self::PasswordReset { reset_url } => json!({ "reset_url": reset_url }),
+			Self::Paystub { .. } => "paystub",
 		}
 	}
 }

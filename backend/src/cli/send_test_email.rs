@@ -7,7 +7,7 @@ use anyhow::{Context, anyhow};
 use crate::{
 	config::Config,
 	email::{
-		Locale, Message,
+		Locale,
 		render::Renderer,
 		sender::{self, OutgoingEmail},
 	},
@@ -16,11 +16,13 @@ use crate::{
 pub async fn run(config: &Config, to: &str, locale: &str) -> anyhow::Result<()> {
 	let locale = Locale::parse(locale)
 		.ok_or_else(|| anyhow!("unknown locale {locale:?}; expected \"en\" or \"es\""))?;
-	let message = Message::TestEmail {
-		sent_at: chrono::Utc::now().format("%Y-%m-%d %H:%M UTC").to_string(),
-	};
+	let sent_at = chrono::Utc::now().format("%Y-%m-%d %H:%M UTC").to_string();
 	let rendered = Renderer::new()
-		.render(&message, locale)
+		.render(
+			"test-email",
+			locale,
+			serde_json::json!({ "sent_at": sent_at }),
+		)
 		.context("rendering the test email")?;
 
 	sender::from_config(&config.email)

@@ -191,7 +191,9 @@
 		"METHOD_NOT_ALLOWED": "Esa acción no está disponible.",
 		"REQUEST_TIMEOUT": "El servidor tardó demasiado en responder. Intente de nuevo.",
 		"RESET_TOKEN_INVALID": "Este enlace no es válido, ya se usó o venció.",
-		"RECIPIENT_NOT_FOUND": "Uno de los destinatarios elegidos ya no puede recibir correos. Recargue e intente de nuevo."
+		"RECIPIENT_NOT_FOUND": "Uno de los destinatarios elegidos ya no puede recibir correos. Recargue e intente de nuevo.",
+		"NO_RECIPIENTS": "Elija al menos una persona a quien enviarlo.",
+		"PAYCHECK_NOT_COMPLETED": "Solo se puede enviar por correo un pago completado."
 	},
 	"unsaved": {
 		"title": "¿Descartar cambios sin guardar?",
@@ -211,5 +213,13 @@
 	"noAccess": {
 		"title": "Sin acceso",
 		"body": "Su cuenta puede recibir correos de GR Logistics, pero no tiene acceso a la aplicación."
+	},
+	"emailPaystub": {
+		"title": "Enviar talón por correo",
+		"intro": "El talón de pago se envía en PDF a cada persona que elija, en su propio idioma.",
+		"recipients": "Enviar a",
+		"send": "Enviar",
+		"queued": "Talón en cola para {count} destinatario | Talón en cola para {count} destinatarios",
+		"saveFirst": "Guarde sus cambios primero: el correo envía el talón guardado."
 	}
 }

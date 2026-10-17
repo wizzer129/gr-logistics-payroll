@@ -16,5 +16,34 @@
 		"expires": "Este enlace funciona una sola vez y vence en 1 hora.",
 		"fallback": "Si el botón no funciona, copie este enlace en su navegador:",
 		"ignore": "Si usted no lo pidió, puede ignorar este correo. Su contraseña no cambiará."
+	},
+	"paystub": {
+		"subject": "Talón de pago: {{ employee_name }} · {{ week }}",
+		"heading": "Talón de pago",
+		"work_week": "Semana de trabajo",
+		"payday": "Día de pago",
+		"total_pay": "Pago total",
+		"attached": "El talón de pago para imprimir va adjunto en PDF.",
+		"filename": "talon-de-pago"
+	},
+	"paystub_pdf": {
+		"company": "GR Logistics",
+		"title": "Talón de Pago",
+		"contractor": "Contratista",
+		"owner_operator": "Propietario Operador",
+		"work_week": "Semana de Trabajo",
+		"payday": "Día de Pago",
+		"load_count": "Cargas",
+		"payment_type": "Tipo de Pago",
+		"lump_sum": "Pago Global",
+		"date": "Fecha",
+		"load": "Carga",
+		"pay": "Pago",
+		"extra": "Extra",
+		"extra_pay_total": "Pago Extra",
+		"summary_total": "Total General",
+		"employee_cut": "Parte del Empleado ({rate}%)",
+		"total_pay": "Pago Total",
+		"no_loads": "No hay cargas"
 	}
 }

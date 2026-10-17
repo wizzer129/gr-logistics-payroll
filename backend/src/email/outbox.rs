@@ -9,6 +9,7 @@ use tokio::sync::watch;
 use uuid::Uuid;
 
 use super::{
+	compose::{ComposeError, compose},
 	message::{Locale, Message},
 	render::Renderer,
 	sender::{EmailSender, OutgoingEmail, SendError},
@@ -56,9 +57,11 @@ impl Outbox {
 	}
 
 	async fn process(&self, row: ClaimedEmail) -> Result<(), sqlx::Error> {
-		let email = match self.prepare(&row) {
+		let email = match self.prepare(&row).await {
 			Ok(email) => email,
-			Err(error) => return self.failed(row.id, &error).await,
+			Err(ComposeError::Permanent(error)) => return self.failed(row.id, &error).await,
+			// The claim lease runs out and the row is retried, like any database hiccup.
+			Err(ComposeError::Database(error)) => return Err(error),
 		};
 
 		match self.sender.send(&email).await {
@@ -87,21 +90,24 @@ impl Outbox {
 		email_outbox::mark_failed(&self.pool, id, error).await
 	}
 
-	/// A row that can't be turned into an email (unreadable payload, render error) is a
-	/// permanent failure: retrying would fail the same way.
-	fn prepare(&self, row: &ClaimedEmail) -> Result<OutgoingEmail, String> {
+	/// A row that can't be turned into an email (unreadable payload, the paycheck log is
+	/// gone, a render error) is a permanent failure: retrying would fail the same way.
+	async fn prepare(&self, row: &ClaimedEmail) -> Result<OutgoingEmail, ComposeError> {
+		let permanent = ComposeError::Permanent;
 		let payload = row
 			.payload
 			.as_ref()
-			.ok_or_else(|| "payload is missing".to_owned())?;
+			.ok_or_else(|| permanent("payload is missing".to_owned()))?;
 		let message: Message = serde_json::from_value(payload.0.clone())
-			.map_err(|error| format!("unreadable payload: {error}"))?;
-		let locale =
-			Locale::parse(&row.locale).ok_or_else(|| format!("unknown locale {:?}", row.locale))?;
+			.map_err(|error| permanent(format!("unreadable payload: {error}")))?;
+		let locale = Locale::parse(&row.locale)
+			.ok_or_else(|| permanent(format!("unknown locale {:?}", row.locale)))?;
+
+		let composed = compose(&self.pool, &self.renderer, &message, locale).await?;
 		let rendered = self
 			.renderer
-			.render(&message, locale)
-			.map_err(|error| format!("render failed: {error}"))?;
+			.render(composed.template, locale, composed.context)
+			.map_err(|error| permanent(format!("render failed: {error}")))?;
 
 		Ok(OutgoingEmail {
 			id: Some(row.id),
@@ -109,7 +115,7 @@ impl Outbox {
 			subject: rendered.subject,
 			html: rendered.html,
 			text: rendered.text,
-			attachments: Vec::new(),
+			attachments: composed.attachments,
 		})
 	}
 

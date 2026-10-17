@@ -30,6 +30,10 @@ tower = "0.5.3"
 tower-http = { version = "0.7.1", features = ["cors", "trace", "limit"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["json", "env-filter"] }
+typst = "0.15"
+typst-as-lib = "0.17"
+typst-layout = "0.15"
+typst-pdf = "0.15"
 uuid = { version = "1.28.0", features = ["serde", "v4"] }
 
 [dev-dependencies]

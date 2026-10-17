@@ -1,6 +1,6 @@
 # Email Service — Spec
 
-Status: **Phases 1–3 built** (foundation, password reset, recipients); Phases 4–5 to do (§13). Covers the three
+Status: **Phases 1–4 built** (foundation, password reset, recipients, paystub email); Phase 5 (monthly report) to do (§13). Covers the three
 "Accounts & email" items in [TODO.md](./TODO.md) (email service, password reset, email
 recipients) plus emailed paystubs and monthly reports. Conventions in [AGENTS.md](./AGENTS.md) apply throughout
 (error codes, i18n, `services/` owns SQL, explicit roles, money as `Decimal`, …).
@@ -383,17 +383,22 @@ Both routes are `requiresAuth: false`.
 
 ### PDFs: Typst, in-process
 
-PDFs are generated in Rust with [Typst](https://typst.app) (`typst` + `typst-pdf` crates via a
-small `World` impl, or the `typst-as-lib` wrapper). It's pure Rust with no Chromium, so the
-distroless image is unchanged. Templates (`backend/templates/pdf/*.typ`) and fonts are
-embedded. Data goes in as a JSON string through `sys.inputs` and is parsed in the template,
-so the `.typ` files hold layout only.
+PDFs are generated in Rust with [Typst](https://typst.app) 0.15 through the `typst-as-lib`
+wrapper (`src/pdf/`; plus `typst-pdf`, and `typst-layout` for `PagedDocument`, which 0.15
+no longer re-exports). It's pure Rust with no Chromium, so the distroless image is
+unchanged. Templates (`backend/templates/pdf/*.typ`) and fonts are embedded. Data goes in as
+a JSON string through `sys.inputs.data` and is parsed in the template. Every string arrives
+translated and formatted from Rust (`pdf/paystub.rs`, `domain/format.rs`), so the `.typ`
+files hold layout only. The engine is built once (`LazyLock`), and compiles run on the
+blocking pool.
 
-- **Fonts:** the distroless image has no system fonts, so the binary embeds an
-  open-licensed family that covers Spanish (e.g. Noto Sans or Inter, OFL).
-- **Cost:** Typst is a large dependency. Expect a slower cold `cargo build` and a bigger
-  binary. Cargo-chef caches it in the Docker build, so only changes to `Cargo.lock` pay
-  that cost again.
+- **Fonts:** `backend/fonts/` holds Noto Sans Regular/Medium/Bold (SIL OFL 1.1, `OFL.txt`).
+  The distroless image has no system fonts.
+- **Cost:** about 200 more crates, and a cold dev build took about 40s. Cargo-chef caches
+  them in the Docker build, so only changes to `Cargo.lock` pay that cost again.
+- **Formatting:** `domain/format.rs` reproduces the frontend's `Intl.DateTimeFormat` output
+  for both locales (`Oct 4, 2026` / `4 oct 2026`, `Sun, 10/4` / `dom, 4/10`), with tests
+  checked against Intl.
 
 Alternatives considered:
 
@@ -416,9 +421,19 @@ drift, never amounts. Snapshot-ish tests on both catch accidental changes.
   employee without an email: `400 RECIPIENT_NOT_FOUND`.
 - Enqueue one row per recipient and return `202 { outboxIds }`.
 
-UI: an "Email paystub" button next to "Paystub" on Payment Processing (after completing)
-and in the Edit Payment dialog. It opens a small dialog with `RecipientSelect`, with the
-paycheck's own employee pre-selected when they have an email.
+Sending happens in the outbox's compose step (`email/compose.rs`): it loads the log, builds
+the document, renders the PDF and attaches it as `pay-stub-<name>-<week start>.pdf` (the
+prefix is translated). A log deleted before sending is a permanent failure.
+
+UI: `EmailPaystubDialog.vue` (`RecipientSelect`, with the paycheck's own employee
+pre-selected when they have an email) opens from:
+
+- an envelope icon on each completed row in Edit Payment
+- an "Email pay stub" button in the Edit Payment dialog, disabled until changes are saved,
+  since the email sends the saved log
+- an envelope icon on completed rows in the Payment Processing history panel. That's
+  where a just-completed payment shows up, because the processing form resets after it's
+  saved.
 
 ### Monthly report
 

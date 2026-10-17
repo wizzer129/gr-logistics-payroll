@@ -4,9 +4,12 @@ import { useI18n } from 'vue-i18n';
 import { formatMonthDay } from '../../utils/week';
 import { useToastStore } from '../../store/toast-store';
 import { apiJson } from '../../utils/api';
+import EmailPaystubDialog from '../email/EmailPaystubDialog.vue';
 
 type HistoryRow = {
 	id: string;
+	employeeId: string;
+	status: 'draft' | 'completed';
 	firstName: string;
 	lastName: string;
 	payday: string;
@@ -22,6 +25,14 @@ const emit = defineEmits<{ collapse: [] }>();
 const rows = ref<HistoryRow[]>([]);
 const loading = ref(false);
 const toast = useToastStore();
+
+// Right after completing a payment, this is where its pay stub gets emailed from.
+const emailRow = ref<HistoryRow | null>(null);
+const emailOpen = ref(false);
+function openEmail(row: HistoryRow): void {
+	emailRow.value = row;
+	emailOpen.value = true;
+}
 
 async function refresh(): Promise<void> {
 	loading.value = true;
@@ -59,6 +70,7 @@ const timeFormatter = computed(
 				<tr>
 					<th>{{ t('history.employee') }}</th>
 					<th>{{ t('history.processedAt') }}</th>
+					<th />
 				</tr>
 			</thead>
 			<tbody>
@@ -80,12 +92,27 @@ const timeFormatter = computed(
 							{{ timeFormatter.format(new Date(row.createdAt)) }}
 						</div>
 					</td>
+					<td class="py-1 px-0">
+						<v-btn
+							v-if="row.status === 'completed'"
+							icon="mdi-email-outline"
+							size="small"
+							variant="text"
+							:aria-label="t('emailPaystub.title')"
+							@click="openEmail(row)"
+						/>
+					</td>
 				</tr>
 			</tbody>
 		</v-table>
 		<v-card-text v-else-if="!loading" class="text-medium-emphasis">
 			{{ t('history.empty') }}
 		</v-card-text>
+		<EmailPaystubDialog
+			v-model="emailOpen"
+			:log-id="emailRow?.id ?? null"
+			:employee-id="emailRow?.employeeId ?? null"
+		/>
 	</v-card>
 </template>
 

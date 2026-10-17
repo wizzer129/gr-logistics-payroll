@@ -20,7 +20,8 @@ reference. Outstanding/planned work is tracked in [TODO.md](./TODO.md).
 - **Backend: one crate per concern, already chosen.** HTTP = axum/tower/tower-http,
   Postgres = sqlx, validation = garde, money = rust_decimal, errors = thiserror, logging =
   tracing, HTTP client = reqwest (the `healthcheck` subcommand and the Resend email sender),
-  email templates = minijinja, TLS = rustls with the `ring` backend (sqlx and reqwest share
+  email templates = minijinja, PDFs = Typst via `typst-as-lib` (`src/pdf/`, Noto Sans in
+  `backend/fonts/`), TLS = rustls with the `ring` backend (sqlx and reqwest share
   it; `install_tls_provider()` in `lib.rs`). Don't add a second crate that duplicates one of
   these.
 - **No ORM.** Schema lives as plain SQL in `backend/migrations/`, applied by

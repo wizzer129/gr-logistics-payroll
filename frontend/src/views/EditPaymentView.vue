@@ -9,6 +9,7 @@ import type { Load } from '../store/payment-processing-store';
 import LoadForm from '../components/payment-processing/LoadForm.vue';
 import LoadList from '../components/payment-processing/LoadList.vue';
 import PaystubPrinter from '../components/payment-processing/PaystubPrinter.vue';
+import EmailPaystubDialog from '../components/email/EmailPaystubDialog.vue';
 import type { PaystubData } from '../components/payment-processing/Paystub.vue';
 import { useConfirmStore } from '../store/confirm-store';
 import { useUnsavedChanges } from '../composables/useUnsavedChanges';
@@ -234,6 +235,16 @@ const editPaystub = computed<PaystubData | null>(() => {
 	};
 });
 
+// The email always sends the saved log, so it's only offered for completed logs, and
+// in the edit dialog only once its changes are saved.
+const emailLog = ref<PaycheckLogRow | null>(null);
+const emailOpen = ref(false);
+
+function openEmail(log: PaycheckLogRow): void {
+	emailLog.value = log;
+	emailOpen.value = true;
+}
+
 function onPrintPaystub(): void {
 	if (editPaystub.value) printer.value?.print(editPaystub.value);
 }
@@ -327,6 +338,14 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 							variant="text"
 							:aria-label="t('common.edit')"
 							@click="openEdit(log)"
+						/>
+						<v-btn
+							v-if="log.status === 'completed'"
+							icon="mdi-email-outline"
+							size="small"
+							variant="text"
+							:aria-label="t('emailPaystub.title')"
+							@click="openEmail(log)"
 						/>
 						<v-btn
 							icon="mdi-delete"
@@ -453,6 +472,24 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 					<v-btn variant="outlined" prepend-icon="mdi-printer" @click="onPrintPaystub">{{
 						t('payment.printPaystub')
 					}}</v-btn>
+					<v-tooltip
+						v-if="editingLog?.status === 'completed'"
+						:text="t('emailPaystub.saveFirst')"
+						:disabled="!editIsDirty"
+						location="top"
+					>
+						<template #activator="{ props: tooltip }">
+							<span v-bind="tooltip">
+								<v-btn
+									variant="outlined"
+									prepend-icon="mdi-email-outline"
+									:disabled="editIsDirty"
+									@click="openEmail(editingLog)"
+									>{{ t('emailPaystub.title') }}</v-btn
+								>
+							</span>
+						</template>
+					</v-tooltip>
 					<v-spacer />
 					<v-btn variant="outlined" @click="requestCloseEdit">{{
 						t('common.cancel')
@@ -473,6 +510,11 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 		</v-dialog>
 
 		<PaystubPrinter ref="printer" />
+		<EmailPaystubDialog
+			v-model="emailOpen"
+			:log-id="emailLog?.id ?? null"
+			:employee-id="emailLog?.employeeId ?? null"
+		/>
 	</v-container>
 </template>
 

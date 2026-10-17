@@ -191,7 +191,9 @@
 		"METHOD_NOT_ALLOWED": "That action isn't supported.",
 		"REQUEST_TIMEOUT": "The server took too long to respond. Try again.",
 		"RESET_TOKEN_INVALID": "This reset link is invalid, already used, or expired.",
-		"RECIPIENT_NOT_FOUND": "One of the chosen recipients can't receive email anymore. Reload and try again."
+		"RECIPIENT_NOT_FOUND": "One of the chosen recipients can't receive email anymore. Reload and try again.",
+		"NO_RECIPIENTS": "Pick at least one person to send it to.",
+		"PAYCHECK_NOT_COMPLETED": "Only a completed paycheck can be emailed."
 	},
 	"unsaved": {
 		"title": "Discard unsaved changes?",
@@ -211,5 +213,13 @@
 	"noAccess": {
 		"title": "No access",
 		"body": "Your account can receive emails from GR Logistics, but it doesn't have access to the app."
+	},
+	"emailPaystub": {
+		"title": "Email pay stub",
+		"intro": "The pay stub goes out as a PDF to each person you pick, in their own language.",
+		"recipients": "Send to",
+		"send": "Send",
+		"queued": "Pay stub queued for {count} recipient | Pay stub queued for {count} recipients",
+		"saveFirst": "Save your changes first: the email sends the saved pay stub."
 	}
 }

@@ -59,6 +59,7 @@ pub fn build_app(state: AppState) -> Router {
 			post(paycheck_logs::complete),
 		)
 		.route("/api/paycheck-logs/{id}/loads", get(paycheck_logs::loads))
+		.route("/api/paycheck-logs/{id}/email", post(email::send_paystub))
 		.route("/api/dashboard/summary", get(dashboard::summary))
 		.route(
 			"/api/email/recipient-options",

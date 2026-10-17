@@ -16,5 +16,34 @@
 		"expires": "This link works once and expires in 1 hour.",
 		"fallback": "If the button doesn't work, copy this link into your browser:",
 		"ignore": "If you didn't ask for this, you can ignore this email. Your password won't change."
+	},
+	"paystub": {
+		"subject": "Pay stub: {{ employee_name }} · {{ week }}",
+		"heading": "Pay stub",
+		"work_week": "Work week",
+		"payday": "Payday",
+		"total_pay": "Total pay",
+		"attached": "The printable pay stub is attached as a PDF.",
+		"filename": "pay-stub"
+	},
+	"paystub_pdf": {
+		"company": "GR Logistics",
+		"title": "Pay Stub",
+		"contractor": "Contractor",
+		"owner_operator": "Owner Operator",
+		"work_week": "Work Week",
+		"payday": "Payday",
+		"load_count": "Loads",
+		"payment_type": "Payment Type",
+		"lump_sum": "Lump Sum",
+		"date": "Date",
+		"load": "Load",
+		"pay": "Payment",
+		"extra": "Extra",
+		"extra_pay_total": "Extra Pay",
+		"summary_total": "Summary Total",
+		"employee_cut": "Employee Cut ({rate}%)",
+		"total_pay": "Total Pay",
+		"no_loads": "No loads"
 	}
 }

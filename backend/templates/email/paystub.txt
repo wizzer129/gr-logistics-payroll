@@ -1,0 +1,24 @@
+
+
+GR Logistics
+
+{{ t.paystub.heading }}
+
+{{ employee_name }}
+
+{{ t.paystub.work_week }}
+
+{{ week }}
+
+{{ t.paystub.payday }}
+
+{{ payday }}
+
+{{ t.paystub.total_pay }}
+
+{{ total_pay }}
+
+{{ t.paystub.attached }}
+
+{{ t.common.footer }}
+

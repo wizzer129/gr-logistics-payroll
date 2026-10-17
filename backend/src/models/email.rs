@@ -34,3 +34,22 @@ pub struct MonthlyReportRecipients {
 	#[garde(skip)]
 	pub user_ids: Vec<Uuid>,
 }
+
+/// Who to email: picked users and/or employees (never typed addresses).
+#[derive(Debug, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct SendTo {
+	#[serde(default)]
+	#[garde(skip)]
+	pub user_ids: Vec<Uuid>,
+	#[serde(default)]
+	#[garde(skip)]
+	pub employee_ids: Vec<Uuid>,
+}
+
+/// One outbox row per recipient.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Queued {
+	pub outbox_ids: Vec<Uuid>,
+}

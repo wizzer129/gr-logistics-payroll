@@ -1,6 +1,7 @@
 //! Outgoing email (EMAIL-SPEC.md). Handlers only ever call [`enqueue`], inside the
 //! transaction that caused the email; the [`outbox`] worker renders and sends it later.
 
+pub mod compose;
 pub mod message;
 pub mod outbox;
 pub mod render;

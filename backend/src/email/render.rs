@@ -7,7 +7,7 @@ use include_dir::{Dir, include_dir};
 use minijinja::{Environment, UndefinedBehavior, value::Serde};
 use serde_json::Value;
 
-use super::message::{Locale, Message};
+use crate::locale::Locale;
 
 static TEMPLATES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/templates/email");
 static LOCALES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/locales/email");
@@ -57,14 +57,20 @@ impl Renderer {
 		Self { env, strings }
 	}
 
+	/// The locale file for `locale` (also the source of PDF labels).
+	pub fn strings(&self, locale: Locale) -> &Value {
+		&self.strings[&locale]
+	}
+
+	/// Fills `templates/email/<template>.html` / `.txt` and the subject
+	/// (`t.<template>.subject`) with `context` plus the locale strings as `t`.
 	pub fn render(
 		&self,
-		message: &Message,
+		template: &str,
 		locale: Locale,
+		mut context: Value,
 	) -> Result<RenderedEmail, minijinja::Error> {
-		let template = message.template();
 		let t = &self.strings[&locale];
-		let mut context = message.context();
 		context["t"] = t.clone();
 		let context = Serde(&context);
 
@@ -98,6 +104,8 @@ impl Default for Renderer {
 #[cfg(test)]
 mod tests {
 	use std::collections::BTreeSet;
+
+	use serde_json::json;
 
 	use super::*;
 
@@ -145,32 +153,72 @@ mod tests {
 	}
 
 	#[test]
-	fn renders_in_each_locale_with_no_placeholders_left() {
+	fn every_template_renders_in_each_locale_with_no_placeholders_left() {
 		let renderer = Renderer::new();
-		let message = Message::TestEmail {
-			sent_at: "2026-10-16 09:00".into(),
-		};
-		for locale in Locale::ALL {
-			let email = renderer.render(&message, locale).unwrap();
-			assert!(!email.subject.is_empty());
-			for body in [&email.html, &email.text] {
-				assert!(!body.contains("{{"), "{locale:?}: {body}");
-				assert!(body.contains("2026-10-16 09:00"), "{locale:?}");
+		// One sample context per template; strict mode fails on anything missing.
+		let samples = [
+			("test-email", json!({ "sent_at": "SAMPLE-1" })),
+			(
+				"password-reset",
+				json!({ "reset_url": "https://example.com/reset-password?token=SAMPLE-1" }),
+			),
+			(
+				"paystub",
+				json!({
+					"employee_name": "SAMPLE-1", "week": "Oct 4 – Oct 10, 2026",
+					"payday": "Oct 16, 2026", "total_pay": "$441.00",
+				}),
+			),
+		];
+		let built: BTreeSet<_> = TEMPLATES
+			.files()
+			.map(|file| {
+				file.path()
+					.with_extension("")
+					.to_string_lossy()
+					.into_owned()
+			})
+			.collect();
+		let sampled: BTreeSet<_> = samples.iter().map(|(name, _)| (*name).to_owned()).collect();
+		assert_eq!(built, sampled, "add a sample here for every template");
+
+		for (template, context) in samples {
+			for locale in Locale::ALL {
+				let email = renderer
+					.render(template, locale, context.clone())
+					.unwrap_or_else(|error| panic!("{template} {locale:?}: {error:#}"));
+				assert!(!email.subject.is_empty(), "{template} {locale:?}");
+				for body in [&email.html, &email.text] {
+					assert!(!body.contains("{{"), "{template} {locale:?}: {body}");
+					assert!(body.contains("SAMPLE-1"), "{template} {locale:?}");
+				}
 			}
 		}
 
-		let es = renderer.render(&message, Locale::Es).unwrap();
+		let es = renderer
+			.render("test-email", Locale::Es, json!({ "sent_at": "x" }))
+			.unwrap();
 		assert_eq!(es.subject, "Correo de prueba de GR Logistics");
 		assert!(es.html.contains("El correo funciona"));
+
+		let paystub = renderer
+			.render("paystub", Locale::En, samples_paystub())
+			.unwrap();
+		assert_eq!(paystub.subject, "Pay stub: Ana Diaz · Oct 4 – Oct 10, 2026");
+	}
+
+	fn samples_paystub() -> Value {
+		json!({
+			"employee_name": "Ana Diaz", "week": "Oct 4 – Oct 10, 2026",
+			"payday": "Oct 16, 2026", "total_pay": "$441.00",
+		})
 	}
 
 	#[test]
 	fn values_are_html_escaped_in_html_only() {
 		let renderer = Renderer::new();
-		let message = Message::TestEmail {
-			sent_at: "<b>x</b> & y".into(),
-		};
-		let email = renderer.render(&message, Locale::En).unwrap();
+		let context = json!({ "sent_at": "<b>x</b> & y" });
+		let email = renderer.render("test-email", Locale::En, context).unwrap();
 		// minijinja also escapes `/`, so check the parts rather than one exact string.
 		assert!(email.html.contains("&lt;b&gt;x"), "{}", email.html);
 		assert!(email.html.contains("&amp; y"), "{}", email.html);

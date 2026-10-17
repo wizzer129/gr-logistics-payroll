@@ -27,6 +27,7 @@ pub enum ErrorCode {
 	KindMismatch,
 	ResetTokenInvalid,
 	RecipientNotFound,
+	NoRecipients,
 	// 401 / 403
 	NotAuthenticated,
 	SessionExpired,
@@ -40,6 +41,7 @@ pub enum ErrorCode {
 	MethodNotAllowed,
 	// 409
 	DuplicateWeek,
+	PaycheckNotCompleted,
 	// 500 / 503
 	InternalError,
 	RequestTimeout,

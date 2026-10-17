@@ -8,4 +8,5 @@ pub mod email_recipients;
 pub mod employees;
 pub mod password_resets;
 pub mod paycheck_logs;
+pub mod paystubs;
 pub mod stores;

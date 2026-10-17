@@ -15,7 +15,12 @@ import {
  * backend turns the ids into addresses, so nothing here is a typed-in address.
  */
 const selection = defineModel<RecipientSelection>({ required: true });
-const props = defineProps<{ label: string; usersOnly?: boolean }>();
+const props = defineProps<{
+	label: string;
+	usersOnly?: boolean;
+	/** Starts this employee selected, if they can receive email (e.g. the paystub's own). */
+	preselectEmployeeId?: string;
+}>();
 
 const { t } = useI18n();
 const toast = useToastStore();
@@ -26,6 +31,14 @@ onMounted(async () => {
 	loading.value = true;
 	try {
 		options.value = await apiJson<RecipientOptions>('/api/email/recipient-options');
+		const preselect = props.preselectEmployeeId;
+		const canReceive = options.value.employees.some((employee) => employee.id === preselect);
+		if (preselect && canReceive && !selection.value.employeeIds.includes(preselect)) {
+			selection.value = {
+				...selection.value,
+				employeeIds: [...selection.value.employeeIds, preselect],
+			};
+		}
 	} catch (error) {
 		toast.fromError(error);
 	} finally {
