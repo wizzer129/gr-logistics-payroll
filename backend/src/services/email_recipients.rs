@@ -6,7 +6,7 @@ use std::collections::HashSet;
 use sqlx::{PgConnection, PgPool};
 use uuid::Uuid;
 
-use crate::{email::Locale, models::email::RecipientOptions};
+use crate::{locale::Locale, models::email::RecipientOptions};
 
 pub async fn options(pool: &PgPool) -> Result<RecipientOptions, sqlx::Error> {
 	let users = sqlx::query_as("SELECT id, email FROM users ORDER BY email")

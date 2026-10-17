@@ -16,8 +16,8 @@ use crate::{
 	models::{
 		load::{Load, LoadInput},
 		paycheck_log::{
-			CreatePaycheckLog, PaycheckLog, PaycheckLogFilter, PaycheckLogListItem,
-			UpdatePaycheckLog,
+			CreatePaycheckLog, PaycheckKind, PaycheckLog, PaycheckLogFilter, PaycheckLogListItem,
+			PaycheckStatus, UpdatePaycheckLog,
 		},
 	},
 	services::{
@@ -38,9 +38,6 @@ fn not_found() -> AppError {
 		"Paycheck log not found".into(),
 	)
 }
-
-const KIND_LOADS: &str = "loads";
-const KIND_LUMP_SUM: &str = "lump_sum";
 
 /// What a create/update body pays for: itemized loads, or one lump sum (exactly one).
 enum Payment<'a> {
@@ -64,10 +61,10 @@ impl<'a> Payment<'a> {
 		}
 	}
 
-	fn kind(&self) -> &'static str {
+	fn kind(&self) -> PaycheckKind {
 		match self {
-			Self::Loads(_) => KIND_LOADS,
-			Self::LumpSum(_) => KIND_LUMP_SUM,
+			Self::Loads(_) => PaycheckKind::Loads,
+			Self::LumpSum(_) => PaycheckKind::LumpSum,
 		}
 	}
 
@@ -170,7 +167,11 @@ pub async fn create(
 		pay_rate,
 	)?;
 
-	let status = if body.complete { "completed" } else { "draft" };
+	let status = if body.complete {
+		PaycheckStatus::Completed
+	} else {
+		PaycheckStatus::Draft
+	};
 	let log = paycheck_logs::insert(&mut tx, body.employee_id, &fields, status, user.id)
 		.await
 		.map_err(|e| AppError::conflict_if_unique(e, ErrorCode::DuplicateWeek, DUPLICATE_WEEK))?;
@@ -179,7 +180,7 @@ pub async fn create(
 	// A draft's create diff stays `{}`; created-as-completed records the status, like
 	// `complete` does.
 	let diff = if body.complete {
-		json!({ "status": "completed" })
+		json!({ "status": PaycheckStatus::Completed })
 	} else {
 		json!({})
 	};
@@ -210,8 +211,9 @@ pub async fn update(
 		return Err(AppError::BadRequest(
 			ErrorCode::KindMismatch,
 			format!(
-				"This paycheck log is {kind}; it can't be edited into {}",
-				payment.kind()
+				"This paycheck log is {}; it can't be edited into {}",
+				kind.as_str(),
+				payment.kind().as_str()
 			),
 		));
 	}
@@ -271,7 +273,7 @@ pub async fn complete(
 			id,
 			AuditAction::Update,
 			&user,
-			json!({ "status": "completed" }),
+			json!({ "status": PaycheckStatus::Completed }),
 		),
 	)
 	.await?;

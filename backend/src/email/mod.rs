@@ -11,11 +11,14 @@ pub mod sender;
 use sqlx::PgConnection;
 use uuid::Uuid;
 
-pub use message::{Locale, Message};
+pub use message::Message;
 
-use crate::services::{
-	email_outbox::{self, NewOutboxEmail},
-	email_recipients::Recipient,
+use crate::{
+	locale::Locale,
+	services::{
+		email_outbox::{self, NewOutboxEmail},
+		email_recipients::Recipient,
+	},
 };
 
 /// Queues `message` for `recipient`. Nothing is sent until the caller's transaction commits.

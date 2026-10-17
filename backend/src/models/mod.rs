@@ -7,7 +7,9 @@ pub mod email;
 pub mod employee;
 pub mod load;
 pub mod money;
+pub mod monthly_report;
 pub mod paycheck_log;
+pub mod paystub;
 
 use serde::{Deserialize, Deserializer};
 
@@ -20,9 +22,9 @@ pub(crate) fn blank_as_none<'de, D: Deserializer<'de>>(
 	Ok(value.filter(|s| !s.trim().is_empty()))
 }
 
-/// garde rule for a language field: `en` or `es` (`email::Locale`).
+/// garde rule for a language field: `en` or `es` (`locale::Locale`).
 pub(crate) fn locale(value: &str, _ctx: &()) -> garde::Result {
-	match crate::email::Locale::parse(value) {
+	match crate::locale::Locale::parse(value) {
 		Some(_) => Ok(()),
 		None => Err(garde::Error::new("must be \"en\" or \"es\"")),
 	}

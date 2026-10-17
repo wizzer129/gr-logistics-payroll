@@ -5,6 +5,7 @@
 mod common;
 
 mod auth;
+mod cleanup;
 mod dashboard;
 mod email;
 mod email_recipients;

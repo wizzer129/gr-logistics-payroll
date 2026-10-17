@@ -10,6 +10,7 @@ use crate::{
 	models::email::{
 		MonthlyReportRecipients, OutboxEntry, Queued, RecipientOptions, SendMonthlyReport, SendTo,
 	},
+	models::paycheck_log::PaycheckStatus,
 	services::{
 		email_outbox::{self, Retry},
 		email_recipients, paystubs,
@@ -68,14 +69,14 @@ pub async fn send_paystub(
 ) -> AppResult<(StatusCode, Json<Queued>)> {
 	user.require_role(&[Role::Admin])?;
 
-	match paystubs::status(&state.pool, id).await?.as_deref() {
+	match paystubs::status(&state.pool, id).await? {
 		None => {
 			return Err(AppError::NotFound(
 				ErrorCode::PaycheckLogNotFound,
 				"Paycheck log not found".into(),
 			));
 		}
-		Some("completed") => {}
+		Some(PaycheckStatus::Completed) => {}
 		Some(_) => {
 			return Err(AppError::Conflict(
 				ErrorCode::PaycheckNotCompleted,

@@ -1,32 +1,16 @@
 //! A month of paychecks → the monthly report's text and numbers, translated and formatted for
 //! one locale (EMAIL-SPEC.md §8). The same document fills the PDF and the email body.
 
-use chrono::{Months, NaiveDate};
+use chrono::Months;
 use rust_decimal::Decimal;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::{domain::format, locale::Locale};
-
-/// One employee's completed paychecks in a month (see `services::monthly_report`).
-#[derive(Clone, Debug, sqlx::FromRow)]
-pub struct EmployeeMonth {
-	pub name: String,
-	pub paychecks: i64,
-	pub loads: i64,
-	pub gross: Decimal,
-	pub paid: Decimal,
-}
-
-pub struct MonthlyReportSource {
-	/// First day of the reported month.
-	pub month: NaiveDate,
-	pub employees: Vec<EmployeeMonth>,
-	/// The month before, for the comparison.
-	pub previous: Vec<EmployeeMonth>,
-	/// Draft paychecks with a payday in the month: left out of every number, but noted.
-	pub drafts: i64,
-}
+use crate::{
+	domain::format,
+	locale::Locale,
+	models::monthly_report::{EmployeeMonth, MonthlyReportSource},
+};
 
 struct Totals {
 	paychecks: i64,
@@ -149,6 +133,7 @@ pub fn document(
 
 #[cfg(test)]
 mod tests {
+	use chrono::NaiveDate;
 	use rust_decimal_macros::dec;
 	use serde_json::json;
 

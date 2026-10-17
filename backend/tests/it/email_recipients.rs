@@ -4,7 +4,7 @@
 use crate::common::{app_with_db, insert_user, login, send};
 use axum::Router;
 use gr_logistics::{
-	email::Locale,
+	locale::Locale,
 	services::email_recipients::{self, Recipient},
 };
 use serde_json::{Value, json};

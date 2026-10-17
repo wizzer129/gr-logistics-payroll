@@ -12,13 +12,14 @@ use axum::{
 	routing::post,
 };
 use gr_logistics::email::{
-	self, Locale, Message,
+	self, Message,
 	outbox::{MAX_ATTEMPTS, Outbox},
 	render::Renderer,
 	sender::{
 		Attachment, EmailSender, LogSender, MemorySender, OutgoingEmail, ResendSender, SendError,
 	},
 };
+use gr_logistics::locale::Locale;
 use serde_json::Value;
 use sqlx::PgPool;
 use tokio::sync::watch;

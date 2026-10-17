@@ -5,12 +5,15 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-	pdf::paystub::{PaystubLoad, PaystubSource},
+	models::{
+		paycheck_log::{PaycheckKind, PaycheckStatus},
+		paystub::{PaystubLoad, PaystubSource},
+	},
 	services::paycheck_logs,
 };
 
-/// `draft` or `completed`, or `None` if there's no such log.
-pub async fn status(pool: &PgPool, log_id: Uuid) -> Result<Option<String>, sqlx::Error> {
+/// `None` if there's no such log.
+pub async fn status(pool: &PgPool, log_id: Uuid) -> Result<Option<PaycheckStatus>, sqlx::Error> {
 	sqlx::query_scalar("SELECT status FROM employee_paycheck_logs WHERE id = $1")
 		.bind(log_id)
 		.fetch_optional(pool)
@@ -24,7 +27,7 @@ pub async fn source(pool: &PgPool, log_id: Uuid) -> Result<Option<PaystubSource>
 		chrono::NaiveDate,
 		chrono::NaiveDate,
 		chrono::NaiveDate,
-		String,
+		PaycheckKind,
 		rust_decimal::Decimal,
 		rust_decimal::Decimal,
 	);
@@ -60,7 +63,7 @@ pub async fn source(pool: &PgPool, log_id: Uuid) -> Result<Option<PaystubSource>
 		week_start,
 		week_end,
 		payday,
-		lump_sum: kind == "lump_sum",
+		lump_sum: kind == PaycheckKind::LumpSum,
 		summary_total,
 		pay_rate_percent,
 		loads,

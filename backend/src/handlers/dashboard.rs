@@ -31,15 +31,20 @@ pub async fn summary(
 	user.require_role(&[Role::Admin])?;
 	let year = resolve_year(&query)?;
 
-	let totals = dashboard::year_totals(&state.pool, year).await?;
+	// Independent reads: run them at once, each on its own pool connection.
+	let (totals, by_employee, by_month) = tokio::try_join!(
+		dashboard::year_totals(&state.pool, year),
+		dashboard::by_employee(&state.pool, year),
+		dashboard::by_month(&state.pool, year),
+	)?;
 	Ok(Json(DashboardSummary {
 		year,
 		ytd_total: totals.ytd_total,
 		ytd_gross: totals.ytd_gross,
 		paycheck_count: totals.paycheck_count,
 		total_loads: totals.total_loads,
-		by_employee: dashboard::by_employee(&state.pool, year).await?,
-		by_month: dashboard::by_month(&state.pool, year).await?,
+		by_employee,
+		by_month,
 	}))
 }
 
@@ -52,34 +57,37 @@ pub async fn employee_summary(
 	user.require_role(&[Role::Admin])?;
 	let year = resolve_year(&query)?;
 
-	let employee = dashboard::employee_name(&state.pool, employee_id)
-		.await?
-		.ok_or_else(|| {
-			AppError::NotFound(ErrorCode::EmployeeNotFound, "Employee not found".into())
-		})?;
-
 	let year_start = NaiveDate::from_ymd_opt(year, 1, 1).expect("year is validated");
 	let month_start = Utc::now()
 		.date_naive()
 		.with_day(1)
 		.expect("day 1 always exists");
 
-	Ok(Json(EmployeeSummary {
-		year,
-		employee,
-		ytd_total: dashboard::employee_total(
+	// Independent reads: run them at once. The totals of an unknown employee are just 0,
+	// so the 404 is decided after.
+	let (employee, ytd_total, month_total) = tokio::try_join!(
+		dashboard::employee_name(&state.pool, employee_id),
+		dashboard::employee_total(
 			&state.pool,
 			employee_id,
 			year_start,
 			year_start + Months::new(12),
-		)
-		.await?,
-		month_total: dashboard::employee_total(
+		),
+		dashboard::employee_total(
 			&state.pool,
 			employee_id,
 			month_start,
 			month_start + Months::new(1),
-		)
-		.await?,
+		),
+	)?;
+	let employee = employee.ok_or_else(|| {
+		AppError::NotFound(ErrorCode::EmployeeNotFound, "Employee not found".into())
+	})?;
+
+	Ok(Json(EmployeeSummary {
+		year,
+		employee,
+		ytd_total,
+		month_total,
 	}))
 }

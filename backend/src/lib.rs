@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod cleanup;
 pub mod cli;
 pub mod config;
 pub mod domain;
@@ -48,16 +49,18 @@ pub async fn serve(config: Config) -> anyhow::Result<()> {
 		Arc::new(Renderer::new()),
 	);
 	let scheduler_pool = pool.clone();
+	let cleanup_pool = pool.clone();
 	let state = AppState {
 		pool,
 		config: Arc::new(config),
 	};
 
-	// One signal stops all three: the HTTP server drains in-flight requests, the outbox
-	// worker finishes the send it's on, and the scheduler finishes its check.
+	// One signal stops them all: the HTTP server drains in-flight requests, the outbox
+	// worker finishes the send it's on, and the scheduler and cleanup finish their pass.
 	let (shutdown_tx, shutdown_rx) = watch::channel(false);
 	let worker = tokio::spawn(outbox.run(shutdown_rx.clone()));
-	let scheduler = tokio::spawn(scheduler::run(scheduler_pool, shutdown_rx));
+	let scheduler = tokio::spawn(scheduler::run(scheduler_pool, shutdown_rx.clone()));
+	let cleanup = tokio::spawn(cleanup::run(cleanup_pool, shutdown_rx));
 
 	let listener = TcpListener::bind(("0.0.0.0", port)).await?;
 	tracing::info!(port, "backend listening");
@@ -71,6 +74,7 @@ pub async fn serve(config: Config) -> anyhow::Result<()> {
 
 	worker.await?;
 	scheduler.await?;
+	cleanup.await?;
 	Ok(())
 }
 

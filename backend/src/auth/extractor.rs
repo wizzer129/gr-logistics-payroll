@@ -3,8 +3,8 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use crate::{
-	email::Locale,
 	error::{AppError, ErrorCode},
+	locale::Locale,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]

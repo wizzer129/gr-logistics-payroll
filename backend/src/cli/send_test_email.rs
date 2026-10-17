@@ -7,10 +7,10 @@ use anyhow::{Context, anyhow};
 use crate::{
 	config::Config,
 	email::{
-		Locale,
 		render::Renderer,
 		sender::{self, OutgoingEmail},
 	},
+	locale::Locale,
 };
 
 pub async fn run(config: &Config, to: &str, locale: &str) -> anyhow::Result<()> {

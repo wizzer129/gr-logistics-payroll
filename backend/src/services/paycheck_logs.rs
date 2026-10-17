@@ -9,9 +9,11 @@ use uuid::Uuid;
 use crate::{
 	models::{
 		load::{Load, LoadInput},
-		paycheck_log::{PaycheckLog, PaycheckLogFilter, PaycheckLogListItem},
+		paycheck_log::{
+			PaycheckKind, PaycheckLog, PaycheckLogFilter, PaycheckLogListItem, PaycheckStatus,
+		},
 	},
-	services::stores::resolve_store_id,
+	services::stores::resolve_store_ids,
 };
 
 /// The total columns are nullable in the schema but always set by this app; COALESCE keeps
@@ -25,8 +27,8 @@ macro_rules! log_columns {
 }
 
 pub struct LogFields {
-	/// `loads` or `lump_sum`; only written on insert (a log's kind never changes).
-	pub kind: &'static str,
+	/// Only written on insert (a log's kind never changes).
+	pub kind: PaycheckKind,
 	pub week_start: NaiveDate,
 	pub week_end: NaiveDate,
 	pub payday: NaiveDate,
@@ -75,7 +77,7 @@ pub async fn employee_pay_rate(
 pub async fn lock_for_update(
 	conn: &mut PgConnection,
 	id: Uuid,
-) -> Result<Option<(Uuid, Decimal, String)>, sqlx::Error> {
+) -> Result<Option<(Uuid, Decimal, PaycheckKind)>, sqlx::Error> {
 	sqlx::query_as(
 		"SELECT employee_id, pay_rate_percent, kind
          FROM employee_paycheck_logs
@@ -91,7 +93,7 @@ pub async fn insert(
 	conn: &mut PgConnection,
 	employee_id: Uuid,
 	fields: &LogFields,
-	status: &str,
+	status: PaycheckStatus,
 	user_id: Uuid,
 ) -> Result<PaycheckLog, sqlx::Error> {
 	sqlx::query_as(concat!(
@@ -147,7 +149,8 @@ pub async fn update(
 	.await
 }
 
-/// Replaces every load on the log (edits send the full set).
+/// Replaces every load on the log (edits send the full set). A fixed number of statements
+/// however many loads there are.
 pub async fn replace_loads(
 	conn: &mut PgConnection,
 	log_id: Uuid,
@@ -159,25 +162,33 @@ pub async fn replace_loads(
 		.bind(log_id)
 		.execute(&mut *conn)
 		.await?;
-
-	for load in loads {
-		let store_id = resolve_store_id(conn, &load.store_name, user_id).await?;
-		sqlx::query(
-			"INSERT INTO employee_loads
-                (employee_id, paycheck_log_id, store_id, load_date, pay, extra_pay,
-                 created_by, last_edited_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $7)",
-		)
-		.bind(employee_id)
-		.bind(log_id)
-		.bind(store_id)
-		.bind(load.load_date)
-		.bind(load.pay)
-		.bind(load.extra_pay)
-		.bind(user_id)
-		.execute(&mut *conn)
-		.await?;
+	if loads.is_empty() {
+		return Ok(());
 	}
+
+	let names: Vec<&str> = loads.iter().map(|load| load.store_name.as_str()).collect();
+	let store_ids = resolve_store_ids(conn, &names, user_id).await?;
+	let dates: Vec<NaiveDate> = loads.iter().map(|load| load.load_date).collect();
+	let pays: Vec<Decimal> = loads.iter().map(|load| load.pay).collect();
+	let extras: Vec<Decimal> = loads.iter().map(|load| load.extra_pay).collect();
+
+	sqlx::query(
+		"INSERT INTO employee_loads
+			(employee_id, paycheck_log_id, store_id, load_date, pay, extra_pay,
+			 created_by, last_edited_by)
+		 SELECT $1, $2, store_id, load_date, pay, extra_pay, $3, $3
+		 FROM unnest($4::uuid[], $5::date[], $6::numeric[], $7::numeric[])
+			AS input(store_id, load_date, pay, extra_pay)",
+	)
+	.bind(employee_id)
+	.bind(log_id)
+	.bind(user_id)
+	.bind(&store_ids)
+	.bind(&dates)
+	.bind(&pays)
+	.bind(&extras)
+	.execute(&mut *conn)
+	.await?;
 
 	Ok(())
 }

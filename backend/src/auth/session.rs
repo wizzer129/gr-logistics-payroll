@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
 	auth::{AuthUser, Role},
-	email::Locale,
+	locale::Locale,
 };
 
 pub const SESSION_COOKIE: &str = "gr_session";
@@ -68,6 +68,14 @@ pub async fn destroy_session(pool: &PgPool, session_id: Uuid) -> Result<(), sqlx
 		.execute(pool)
 		.await?;
 	Ok(())
+}
+
+/// Deletes sessions past their expiry (the hourly cleanup); returns how many.
+pub async fn delete_expired(pool: &PgPool) -> Result<u64, sqlx::Error> {
+	let result = sqlx::query("DELETE FROM sessions WHERE expires_at <= now()")
+		.execute(pool)
+		.await?;
+	Ok(result.rows_affected())
 }
 
 /// A cookie that isn't a UUID is treated as no session (401) rather than reaching Postgres

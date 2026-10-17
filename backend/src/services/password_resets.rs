@@ -1,7 +1,7 @@
 //! `password_reset_tokens` plus the user/session writes a reset makes (EMAIL-SPEC.md §7).
 
 use chrono::{DateTime, Utc};
-use sqlx::PgConnection;
+use sqlx::{PgConnection, PgPool};
 use uuid::Uuid;
 
 /// The user a reset request is for, matched the same way login matches (exact email).
@@ -13,6 +13,17 @@ pub async fn user_id_by_email(
 		.bind(email)
 		.fetch_optional(conn)
 		.await
+}
+
+/// Deletes tokens that expired over a day ago (the hourly cleanup); returns how many. The
+/// day's margin keeps every token the hourly rate limit still counts.
+pub async fn delete_expired(pool: &PgPool) -> Result<u64, sqlx::Error> {
+	let result = sqlx::query(
+		"DELETE FROM password_reset_tokens WHERE expires_at < now() - interval '1 day'",
+	)
+	.execute(pool)
+	.await?;
+	Ok(result.rows_affected())
 }
 
 /// Tokens issued to `user_id` in the last hour, for the silent rate limit.

@@ -144,6 +144,8 @@ Designed in [EMAIL-SPEC.md](./EMAIL-SPEC.md); that file tracks which phases are 
   user out, then calls `GET /api/auth/me` (`restoreSession()`, invoked from `main.ts` before
   mount) to reconcile against the real session cookie. **Never put the session token itself
   in `localStorage`** — that would defeat the point of `httpOnly`.
+- Expired sessions and old password reset tokens are deleted hourly by `src/cleanup.rs`
+  (a task in `serve`, like the outbox worker and the monthly report scheduler).
 
 ## Logging
 

@@ -15,18 +15,18 @@ pub struct YearTotals {
 	pub total_loads: i64,
 }
 
+/// Both queries run at once, each on its own pool connection.
 pub async fn year_totals(pool: &PgPool, year: i32) -> Result<YearTotals, sqlx::Error> {
-	let (ytd_total, ytd_gross, paycheck_count): (Decimal, Decimal, i64) = sqlx::query_as(
+	let sums = sqlx::query_as::<_, (Decimal, Decimal, i64)>(
 		"SELECT COALESCE(SUM(employee_cut), 0), COALESCE(SUM(summary_total), 0), COUNT(*)
          FROM employee_paycheck_logs
          WHERE status = 'completed'
          AND week_start >= make_date($1, 1, 1) AND week_start < make_date($1 + 1, 1, 1)",
 	)
 	.bind(year)
-	.fetch_one(pool)
-	.await?;
+	.fetch_one(pool);
 
-	let total_loads: i64 = sqlx::query_scalar(
+	let total_loads = sqlx::query_scalar::<_, i64>(
 		"SELECT COUNT(*)
          FROM employee_loads el
          JOIN employee_paycheck_logs pl ON pl.id = el.paycheck_log_id
@@ -34,9 +34,10 @@ pub async fn year_totals(pool: &PgPool, year: i32) -> Result<YearTotals, sqlx::E
          AND pl.week_start >= make_date($1, 1, 1) AND pl.week_start < make_date($1 + 1, 1, 1)",
 	)
 	.bind(year)
-	.fetch_one(pool)
-	.await?;
+	.fetch_one(pool);
 
+	let ((ytd_total, ytd_gross, paycheck_count), total_loads) =
+		tokio::try_join!(sums, total_loads)?;
 	Ok(YearTotals {
 		ytd_total,
 		ytd_gross,

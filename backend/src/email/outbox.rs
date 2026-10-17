@@ -10,11 +10,14 @@ use uuid::Uuid;
 
 use super::{
 	compose::{ComposeError, compose},
-	message::{Locale, Message},
+	message::Message,
 	render::Renderer,
 	sender::{EmailSender, OutgoingEmail, SendError},
 };
-use crate::services::email_outbox::{self, ClaimedEmail, NOTIFY_CHANNEL};
+use crate::{
+	locale::Locale,
+	services::email_outbox::{self, ClaimedEmail, NOTIFY_CHANNEL},
+};
 
 /// After this many failed attempts a retryable error becomes `failed`. With the backoff
 /// below that's retries 1, 2, 4 and 8 minutes apart: about a quarter hour in all.

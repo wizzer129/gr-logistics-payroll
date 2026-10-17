@@ -6,7 +6,7 @@ use chrono::{Months, NaiveDate};
 use sqlx::{PgConnection, PgPool};
 use uuid::Uuid;
 
-use crate::pdf::monthly_report::{EmployeeMonth, MonthlyReportSource};
+use crate::models::monthly_report::{EmployeeMonth, MonthlyReportSource};
 
 /// Completed paychecks with a payday in the month starting `month`, one row per employee
 /// (inactive ones included: they were still paid), highest paid first.

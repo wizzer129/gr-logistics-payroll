@@ -6,6 +6,38 @@ use uuid::Uuid;
 
 use super::{load::LoadInput, money};
 
+/// `employee_paycheck_logs.status` (a text column with a CHECK). Serialized as the same
+/// strings the frontend already uses.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[serde(rename_all = "snake_case")]
+#[sqlx(type_name = "text", rename_all = "snake_case")]
+pub enum PaycheckStatus {
+	Draft,
+	/// Totals are a permanent snapshot from here on (see `handlers::paycheck_logs::complete`).
+	Completed,
+}
+
+/// `employee_paycheck_logs.kind` (migration 0009). Never changes after the log is created.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[serde(rename_all = "snake_case")]
+#[sqlx(type_name = "text", rename_all = "snake_case")]
+pub enum PaycheckKind {
+	/// Itemized loads, cut at the log's rate.
+	Loads,
+	/// One amount, no loads, paid in full (recorded at a 100% rate).
+	LumpSum,
+}
+
+impl PaycheckKind {
+	/// The stored (and serialized) name.
+	pub fn as_str(self) -> &'static str {
+		match self {
+			Self::Loads => "loads",
+			Self::LumpSum => "lump_sum",
+		}
+	}
+}
+
 #[derive(Debug, Serialize, sqlx::FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct PaycheckLog {
@@ -14,10 +46,8 @@ pub struct PaycheckLog {
 	pub week_start: NaiveDate,
 	pub week_end: NaiveDate,
 	pub payday: NaiveDate,
-	/// `draft` or `completed`.
-	pub status: String,
-	/// `loads` (itemized) or `lump_sum` (one amount, no loads, paid at 100%).
-	pub kind: String,
+	pub status: PaycheckStatus,
+	pub kind: PaycheckKind,
 	#[serde(with = "money::number")]
 	pub summary_total: Decimal,
 	#[serde(with = "money::number")]
@@ -111,4 +141,25 @@ pub struct UpdatePaycheckLog {
 	#[serde(default, skip_serializing_if = "std::ops::Not::not")]
 	#[garde(skip)]
 	pub complete: bool,
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	/// The API and the database both use these exact strings.
+	#[test]
+	fn status_and_kind_serialize_as_their_stored_names() {
+		assert_eq!(
+			serde_json::to_value(PaycheckStatus::Completed).unwrap(),
+			"completed"
+		);
+		assert_eq!(
+			serde_json::to_value(PaycheckStatus::Draft).unwrap(),
+			"draft"
+		);
+		for kind in [PaycheckKind::Loads, PaycheckKind::LumpSum] {
+			assert_eq!(serde_json::to_value(kind).unwrap(), kind.as_str());
+		}
+	}
 }

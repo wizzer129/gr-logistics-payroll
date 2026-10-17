@@ -5,8 +5,6 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-pub use crate::locale::Locale;
-
 /// One variant per kind of email. The serialized tag is the outbox `kind` and must match
 /// that column's CHECK constraint (migration 0010).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

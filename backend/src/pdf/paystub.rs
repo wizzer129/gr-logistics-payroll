@@ -3,7 +3,6 @@
 //! the cut is computed at the log's own rate and rounded half-up to the dollar
 //! (`domain::payment_calc`); a lump sum is paid in full.
 
-use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use serde::Serialize;
 use serde_json::Value;
@@ -14,26 +13,8 @@ use crate::{
 		payment_calc::{EmployeeCut, calculate_employee_cut},
 	},
 	locale::Locale,
+	models::paystub::PaystubSource,
 };
-
-pub struct PaystubLoad {
-	pub store_name: String,
-	pub load_date: NaiveDate,
-	pub pay: Decimal,
-	pub extra_pay: Decimal,
-}
-
-/// What the database holds for one log (see `services::paystubs`).
-pub struct PaystubSource {
-	pub employee_name: String,
-	pub week_start: NaiveDate,
-	pub week_end: NaiveDate,
-	pub payday: NaiveDate,
-	pub lump_sum: bool,
-	pub summary_total: Decimal,
-	pub pay_rate_percent: Decimal,
-	pub loads: Vec<PaystubLoad>,
-}
 
 #[derive(Debug, Serialize)]
 pub struct LoadRow {
@@ -110,10 +91,12 @@ pub fn document(source: &PaystubSource, locale: Locale, labels: &Value) -> Payst
 
 #[cfg(test)]
 mod tests {
+	use chrono::NaiveDate;
 	use rust_decimal_macros::dec;
 	use serde_json::json;
 
 	use super::*;
+	use crate::models::paystub::PaystubLoad;
 
 	fn date(d: u32) -> NaiveDate {
 		NaiveDate::from_ymd_opt(2026, 10, d).unwrap()

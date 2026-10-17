@@ -4,9 +4,10 @@ use chrono::{Duration, Utc};
 
 use crate::{
 	auth::{AuthUser, Role, password, reset_token, session},
-	email::{self, Locale, Message},
+	email::{self, Message},
 	error::{AppError, AppResult, ErrorCode},
 	extract::ValidatedJson,
+	locale::Locale,
 	models::auth::{LoginRequest, PasswordResetConfirm, PasswordResetRequest, UpdateLocale},
 	services::{email_recipients, password_resets},
 	state::AppState,
