@@ -16,11 +16,11 @@ const auth = useAuthStore();
 const drawerOpen = ref(!mobile.value);
 
 const navLinks = [
-	{ to: '/', labelKey: 'nav.dashboard' },
-	{ to: '/payment-processing', labelKey: 'nav.paymentProcessing' },
-	{ to: '/edit-payment', labelKey: 'nav.editPayment' },
-	{ to: '/employees', labelKey: 'nav.employees' },
-	{ to: '/settings', labelKey: 'nav.settings' },
+	{ to: '/', labelKey: 'nav.dashboard', icon: 'mdi-view-dashboard-outline' },
+	{ to: '/payment-processing', labelKey: 'nav.paymentProcessing', icon: 'mdi-cash-plus' },
+	{ to: '/edit-payment', labelKey: 'nav.editPayment', icon: 'mdi-file-document-edit-outline' },
+	{ to: '/employees', labelKey: 'nav.employees', icon: 'mdi-account-group-outline' },
+	{ to: '/settings', labelKey: 'nav.settings', icon: 'mdi-cog-outline' },
 ];
 
 const localeItems = [
@@ -75,6 +75,8 @@ async function onLogout(): Promise<void> {
 				v-for="link in navLinks"
 				:key="link.to"
 				:to="link.to"
+				:prepend-icon="link.icon"
+				:prepend-gap="16"
 				:title="t(link.labelKey)"
 			/>
 		</v-list>

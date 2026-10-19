@@ -8,6 +8,7 @@ import type { RecipientSelection } from '../utils/recipients';
 import MonthlyReportSendCard from '../components/email/MonthlyReportSendCard.vue';
 import RecipientSelect from '../components/email/RecipientSelect.vue';
 import SentEmailsCard from '../components/email/SentEmailsCard.vue';
+import ThemeSettingsCard from '../components/settings/ThemeSettingsCard.vue';
 
 const { t } = useI18n();
 const toast = useToastStore();
@@ -21,7 +22,9 @@ const sentEmails = ref<InstanceType<typeof SentEmailsCard> | null>(null);
 
 const isDirty = () =>
 	[...recipients.value.userIds].sort().join() !== [...saved.value].sort().join();
-useUnsavedChanges().guardLeave(isDirty);
+// A theme picked in the preview but not applied counts as unsaved too.
+const themeCard = ref<InstanceType<typeof ThemeSettingsCard> | null>(null);
+useUnsavedChanges().guardLeave(() => isDirty() || Boolean(themeCard.value?.isDirty));
 
 onMounted(async () => {
 	loading.value = true;
@@ -65,6 +68,9 @@ async function save(): Promise<void> {
 		<h1 class="text-h5 mb-4">{{ t('nav.settings') }}</h1>
 
 		<v-row>
+			<v-col cols="12">
+				<ThemeSettingsCard ref="themeCard" />
+			</v-col>
 			<v-col cols="12" md="6">
 				<v-card :title="t('settings.monthlyTitle')" :loading="loading" class="h-100">
 					<v-card-text>

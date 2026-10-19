@@ -131,6 +131,44 @@ async fn a_user_saves_their_own_language(pool: PgPool) {
 }
 
 #[sqlx::test(migrations = false)]
+async fn a_user_saves_their_own_theme(pool: PgPool) {
+	let ctx = Ctx::new(pool).await;
+	let (_, me) = ctx.call("GET", "/api/auth/me", None).await;
+	assert_eq!(me["theme"], "default", "the default");
+
+	let (status, _) = ctx
+		.call(
+			"PUT",
+			"/api/auth/me/theme",
+			Some(json!({ "theme": "dracula" })),
+		)
+		.await;
+	assert_eq!(status, 204);
+	let (_, me) = ctx.call("GET", "/api/auth/me", None).await;
+	assert_eq!(me["theme"], "dracula");
+
+	// Added by migration 0016, which widens 0015's CHECK.
+	let (status, _) = ctx
+		.call(
+			"PUT",
+			"/api/auth/me/theme",
+			Some(json!({ "theme": "stormy" })),
+		)
+		.await;
+	assert_eq!(status, 204);
+
+	let (status, body) = ctx
+		.call(
+			"PUT",
+			"/api/auth/me/theme",
+			Some(json!({ "theme": "neon" })),
+		)
+		.await;
+	assert_eq!(status, 400);
+	assert_eq!(body["code"], "VALIDATION_FAILED");
+}
+
+#[sqlx::test(migrations = false)]
 async fn employees_have_a_language(pool: PgPool) {
 	let ctx = Ctx::new(pool).await;
 	let id = ctx.employee("Ana", None, None).await;

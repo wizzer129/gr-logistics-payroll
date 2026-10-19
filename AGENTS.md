@@ -166,9 +166,15 @@ Designed in [EMAIL-SPEC.md](./EMAIL-SPEC.md); that file tracks which phases are 
   `watch(localeRef(), ...)`) — don't set Vuetify's locale independently.
 - Money is always displayed via the i18n currency number format (`n(value, 'currency')`),
   never hand-formatted with a literal `$`.
-- Dark/light theme is handled by Vuetify's theme system with `localStorage` persistence
-  (`frontend/src/plugins/vuetify.ts`: `currentTheme()`/`setTheme()`/`toggleTheme()`) —
-  reuse those helpers rather than touching `vuetify.theme.global` directly elsewhere.
+- Themes are a **family** × a **mode**. The family (`default`, `catppuccin`, `dracula`,
+  `autumn`, `stormy` — palettes in `frontend/src/plugins/themes.ts`) is per user: picked in Settings,
+  saved as `users.theme` via `PUT /api/auth/me/theme`, cached in `localStorage`. Light/dark
+  is per device (`localStorage`, the app bar toggle). Every family has both variants. Use the
+  helpers in `frontend/src/plugins/vuetify.ts` (`currentMode()`/`setMode()`/`toggleTheme()`,
+  `currentFamily()`/`setFamily()`) rather than touching `vuetify.theme.global` directly, and
+  read theme colors from `vuetify.theme.current` rather than checking the theme's name.
+  Adding a family means the frontend list, the backend `theme::Theme` enum and a migration
+  widening `users.theme`'s CHECK.
 - **Toasts go through `useToastStore()`** (`frontend/src/store/toast-store.ts`:
   `success`/`error`/`info`/`warning`, or `show(text, color, timeout)`). App.vue's single
   `<v-snackbar-queue>` shows them one at a time, 3s each by default, user-dismissible.

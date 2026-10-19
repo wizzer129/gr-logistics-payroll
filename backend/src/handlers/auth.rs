@@ -8,9 +8,12 @@ use crate::{
 	error::{AppError, AppResult, ErrorCode},
 	extract::ValidatedJson,
 	locale::Locale,
-	models::auth::{LoginRequest, PasswordResetConfirm, PasswordResetRequest, UpdateLocale},
-	services::{email_recipients, password_resets},
+	models::auth::{
+		LoginRequest, PasswordResetConfirm, PasswordResetRequest, UpdateLocale, UpdateTheme,
+	},
+	services::{email_recipients, password_resets, users},
 	state::AppState,
+	theme::Theme,
 };
 
 const INVALID_CREDENTIALS: &str = "Invalid email or password";
@@ -21,13 +24,14 @@ pub async fn login(
 	jar: CookieJar,
 	ValidatedJson(body): ValidatedJson<LoginRequest>,
 ) -> AppResult<(CookieJar, Json<AuthUser>)> {
-	let row: Option<(uuid::Uuid, String, String, String, String)> =
-		sqlx::query_as("SELECT id, email, role, password_hash, locale FROM users WHERE email = $1")
-			.bind(&body.email)
-			.fetch_optional(&state.pool)
-			.await?;
+	let row: Option<(uuid::Uuid, String, String, String, String, String)> = sqlx::query_as(
+		"SELECT id, email, role, password_hash, locale, theme FROM users WHERE email = $1",
+	)
+	.bind(&body.email)
+	.fetch_optional(&state.pool)
+	.await?;
 
-	let Some((id, email, role, password_hash, locale)) = row else {
+	let Some((id, email, role, password_hash, locale, theme)) = row else {
 		password::burn_verify_time(body.password).await;
 		return Err(AppError::Unauthorized(
 			ErrorCode::InvalidCredentials,
@@ -60,6 +64,7 @@ pub async fn login(
 			email,
 			role,
 			locale,
+			theme: Theme::parse(&theme).unwrap_or_default(),
 		}),
 	))
 }
@@ -94,6 +99,18 @@ pub async fn update_locale(
 	user.require_role(&[Role::Admin, Role::Employee])?;
 	let locale = Locale::parse(&body.locale).unwrap_or(Locale::En);
 	email_recipients::set_user_locale(&state.pool, user.id, locale).await?;
+	Ok(StatusCode::NO_CONTENT)
+}
+
+/// PUT /api/auth/me/theme — any signed-in role: it only touches the caller's own row.
+pub async fn update_theme(
+	user: AuthUser,
+	State(state): State<AppState>,
+	ValidatedJson(body): ValidatedJson<UpdateTheme>,
+) -> AppResult<StatusCode> {
+	user.require_role(&[Role::Admin, Role::Employee])?;
+	let theme = Theme::parse(&body.theme).unwrap_or_default();
+	users::set_theme(&state.pool, user.id, theme).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 

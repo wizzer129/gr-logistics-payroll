@@ -25,14 +25,19 @@ const CATEGORICAL_DARK = [
 ];
 
 /** Theme-aware chart tokens — single sequential blue hue, matching the project's
- * data-viz palette (light `#2a78d6` / dark `#3987e5`), reactive to the live theme toggle. */
+ * data-viz palette (light `#2a78d6` / dark `#3987e5`), reactive to the live theme toggle.
+ * Text follows the active theme's own text color, so labels match any theme family. */
 export function useChartColors() {
-	const isDark = computed(() => vuetify.theme.global.name.value === 'dark');
+	const isDark = computed(() => vuetify.theme.current.value.dark);
 
 	return {
 		isDark,
 		accent: computed(() => (isDark.value ? '#3987e5' : '#2a78d6')),
-		textPrimary: computed(() => (isDark.value ? '#ffffff' : '#0b0b0b')),
+		textPrimary: computed(
+			() =>
+				vuetify.theme.current.value.colors['on-surface'] ??
+				(isDark.value ? '#ffffff' : '#0b0b0b'),
+		),
 		textMuted: computed(() => '#898781'),
 		grid: computed(() => (isDark.value ? '#2c2c2a' : '#e1e0d9')),
 		categorical: computed(() => (isDark.value ? CATEGORICAL_DARK : CATEGORICAL_LIGHT)),

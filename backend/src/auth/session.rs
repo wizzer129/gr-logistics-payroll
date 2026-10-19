@@ -10,6 +10,7 @@ use uuid::Uuid;
 use crate::{
 	auth::{AuthUser, Role},
 	locale::Locale,
+	theme::Theme,
 };
 
 pub const SESSION_COOKIE: &str = "gr_session";
@@ -37,8 +38,8 @@ pub async fn user_by_session_id(
 	pool: &PgPool,
 	session_id: Uuid,
 ) -> Result<Option<AuthUser>, sqlx::Error> {
-	let row: Option<(Uuid, String, String, String)> = sqlx::query_as(
-		"SELECT users.id, users.email, users.role, users.locale
+	let row: Option<(Uuid, String, String, String, String)> = sqlx::query_as(
+		"SELECT users.id, users.email, users.role, users.locale, users.theme
          FROM sessions
          JOIN users ON users.id = sessions.user_id
          WHERE sessions.session_id = $1
@@ -48,7 +49,7 @@ pub async fn user_by_session_id(
 	.fetch_optional(pool)
 	.await?;
 
-	Ok(row.and_then(|(id, email, role, locale)| {
+	Ok(row.and_then(|(id, email, role, locale, theme)| {
 		let Some(role) = Role::parse(&role) else {
 			tracing::warn!(%id, role, "user has an unknown role; rejecting session");
 			return None;
@@ -58,6 +59,7 @@ pub async fn user_by_session_id(
 			email,
 			role,
 			locale: Locale::parse(&locale).unwrap_or(Locale::En),
+			theme: Theme::parse(&theme).unwrap_or_default(),
 		})
 	}))
 }

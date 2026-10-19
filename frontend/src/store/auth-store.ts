@@ -2,12 +2,23 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { apiFetch, apiJson, apiRequest } from '../utils/api';
 import { localeRef } from '../plugins/i18n';
+import { setFamily } from '../plugins/vuetify';
+import type { ThemeFamily } from '../plugins/themes';
 import { useToastStore } from './toast-store';
 
 export type Locale = 'en' | 'es';
 
-/** `locale` is the language their emails go out in; kept in step with the UI's. */
-export type User = { id: string; email: string; role: 'admin' | 'employee'; locale: Locale };
+/**
+ * `locale` is the language their emails go out in; kept in step with the UI's. `theme` is
+ * their color theme (Settings); light/dark stays per device.
+ */
+export type User = {
+	id: string;
+	email: string;
+	role: 'admin' | 'employee';
+	locale: Locale;
+	theme: ThemeFamily;
+};
 
 const STORAGE_KEY = 'gr-logistics-user';
 
@@ -33,6 +44,8 @@ export const useAuthStore = defineStore('auth', () => {
 
 	function setUser(value: User | null): void {
 		user.value = value;
+		// The signed-in user's theme wins; signed out, the last one stays (login page).
+		if (value?.theme) setFamily(value.theme);
 
 		if (value) localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
 		else localStorage.removeItem(STORAGE_KEY);
@@ -65,6 +78,17 @@ export const useAuthStore = defineStore('auth', () => {
 		} catch (error) {
 			useToastStore().fromError(error);
 		}
+	}
+
+	/** Saves and applies the user's color theme. Throws a translated `ApiError` on failure. */
+	async function saveTheme(theme: ThemeFamily): Promise<void> {
+		if (!user.value) return;
+		await apiRequest('/api/auth/me/theme', {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ theme }),
+		});
+		setUser({ ...user.value, theme });
 	}
 
 	/** Always logs out locally; a failed server call just leaves a session to expire. */
@@ -100,5 +124,14 @@ export const useAuthStore = defineStore('auth', () => {
 		}
 	}
 
-	return { user, isAuthenticated, isAdmin, login, logout, restoreSession, saveLocale };
+	return {
+		user,
+		isAuthenticated,
+		isAdmin,
+		login,
+		logout,
+		restoreSession,
+		saveLocale,
+		saveTheme,
+	};
 });

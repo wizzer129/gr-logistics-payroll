@@ -258,5 +258,25 @@
 			"sent": "Enviado",
 			"failed": "Falló"
 		}
+	},
+	"theme": {
+		"title": "Tema",
+		"hint": "El tema de colores de la aplicación, guardado en su cuenta. El botón de sol/luna en la barra superior sigue cambiando entre su versión clara y oscura.",
+		"label": "Tema",
+		"apply": "Aplicar tema",
+		"applied": "Tema aplicado",
+		"preview": "Vista previa",
+		"light": "Claro",
+		"dark": "Oscuro",
+		"sampleTitle": "Pago semanal",
+		"sampleSubtitle": "4 oct – 10 oct",
+		"sampleAlert": "Así se ven los mensajes en este tema.",
+		"families": {
+			"default": "Predeterminado",
+			"catppuccin": "Catppuccin Frappé",
+			"dracula": "Dracula",
+			"autumn": "Otoño",
+			"stormy": "Coral Tormentoso"
+		}
 	}
 }

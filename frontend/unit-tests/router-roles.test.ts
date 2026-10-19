@@ -4,7 +4,7 @@ import router from '../src/router';
 import { useAuthStore, type User } from '../src/store/auth-store';
 
 function signIn(role: User['role']): void {
-	useAuthStore().user = { id: '1', email: 'x@example.com', role, locale: 'en' };
+	useAuthStore().user = { id: '1', email: 'x@example.com', role, locale: 'en', theme: 'default' };
 }
 
 describe('router role guard', () => {

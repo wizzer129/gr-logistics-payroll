@@ -40,3 +40,18 @@ pub struct UpdateLocale {
 	#[garde(custom(super::locale))]
 	pub locale: String,
 }
+
+#[derive(Debug, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateTheme {
+	#[garde(custom(known_theme))]
+	pub theme: String,
+}
+
+/// One of `theme::Theme`'s names.
+fn known_theme(value: &str, _ctx: &()) -> garde::Result {
+	match crate::theme::Theme::parse(value) {
+		Some(_) => Ok(()),
+		None => Err(garde::Error::new("unknown theme")),
+	}
+}

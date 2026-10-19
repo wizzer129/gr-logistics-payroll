@@ -258,5 +258,25 @@
 			"sent": "Sent",
 			"failed": "Failed"
 		}
+	},
+	"theme": {
+		"title": "Theme",
+		"hint": "Your color theme for the app, saved to your account. The sun/moon button in the top bar still switches between its light and dark versions.",
+		"label": "Theme",
+		"apply": "Apply theme",
+		"applied": "Theme applied",
+		"preview": "Preview",
+		"light": "Light",
+		"dark": "Dark",
+		"sampleTitle": "Weekly paycheck",
+		"sampleSubtitle": "Oct 4 – Oct 10",
+		"sampleAlert": "This is how messages look in this theme.",
+		"families": {
+			"default": "Default",
+			"catppuccin": "Catppuccin Frappé",
+			"dracula": "Dracula",
+			"autumn": "Autumn",
+			"stormy": "Stormy Coral"
+		}
 	}
 }

@@ -38,6 +38,7 @@ pub fn build_app(state: AppState) -> Router {
 	let data = Router::new()
 		.route("/api/auth/me", get(auth_handlers::me))
 		.route("/api/auth/me/locale", put(auth_handlers::update_locale))
+		.route("/api/auth/me/theme", put(auth_handlers::update_theme))
 		.route(
 			"/api/employees",
 			get(employees::list).post(employees::create),

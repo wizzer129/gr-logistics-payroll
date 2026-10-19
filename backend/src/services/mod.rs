@@ -11,3 +11,4 @@ pub mod password_resets;
 pub mod paycheck_logs;
 pub mod paystubs;
 pub mod stores;
+pub mod users;

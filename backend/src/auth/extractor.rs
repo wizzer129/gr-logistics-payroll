@@ -5,6 +5,7 @@ use uuid::Uuid;
 use crate::{
 	error::{AppError, ErrorCode},
 	locale::Locale,
+	theme::Theme,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -39,6 +40,8 @@ pub struct AuthUser {
 	pub role: Role,
 	/// The language their emails go out in, kept in step with the UI (EMAIL-SPEC.md §6).
 	pub locale: Locale,
+	/// Their color theme for the web app, picked in Settings.
+	pub theme: Theme,
 }
 
 impl AuthUser {

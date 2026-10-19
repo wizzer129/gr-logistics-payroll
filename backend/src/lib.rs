@@ -14,6 +14,7 @@ pub mod pdf;
 pub mod routes;
 pub mod services;
 pub mod state;
+pub mod theme;
 
 use std::{sync::Arc, time::Duration};
 
