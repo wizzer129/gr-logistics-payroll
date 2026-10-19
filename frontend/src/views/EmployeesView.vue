@@ -106,10 +106,16 @@ onMounted(loadEmployees);
 
 		<v-row>
 			<v-col cols="12" md="4">
-				<EmployeeForm ref="form" @save="onSave" />
+				<v-card :title="t('employees.add')">
+					<v-card-text>
+						<EmployeeForm ref="form" @save="onSave" />
+					</v-card-text>
+				</v-card>
 			</v-col>
 			<v-col cols="12" md="8">
-				<EmployeeList :employees="employees" @edit="onEdit" @delete="onDelete" />
+				<v-card>
+					<EmployeeList :employees="employees" @edit="onEdit" @delete="onDelete" />
+				</v-card>
 			</v-col>
 		</v-row>
 

@@ -111,6 +111,14 @@ watch(tab, (value) => {
 	padding-inline: 12px;
 }
 
+/* Spanish labels are long; on a phone all three still have to fit (Vuetify's xs). */
+@media (max-width: 599.98px) {
+	.folder-tabs :deep(.v-tab.v-tab.v-btn) {
+		padding-inline: 8px;
+		font-size: 0.8125rem;
+	}
+}
+
 /* Adjacent tabs share one border instead of doubling it. */
 .folder-tabs :deep(.v-tab + .v-tab) {
 	margin-left: -1px;

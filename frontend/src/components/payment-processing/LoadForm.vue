@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
 import type { Load } from '../../store/payment-processing-store';
 
 const { t } = useI18n();
+const { xs } = useDisplay();
 const { buttonVariant = 'elevated' } = defineProps<{
 	buttonVariant?: 'elevated' | 'outlined';
 }>();
@@ -43,7 +45,7 @@ function onSubmit(): void {
 			type="number"
 			step="0.01"
 		/>
-		<v-btn type="submit" color="primary" :variant="buttonVariant">{{
+		<v-btn type="submit" color="primary" class="mt-2" :block="xs" :variant="buttonVariant">{{
 			t('payment.addManualLoad')
 		}}</v-btn>
 	</v-form>

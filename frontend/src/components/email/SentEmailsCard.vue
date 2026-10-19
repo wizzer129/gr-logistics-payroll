@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
 import { useToastStore } from '../../store/toast-store';
 import { apiJson, apiRequest } from '../../utils/api';
 
@@ -25,6 +26,8 @@ type OutboxEntry = {
 
 const { t, locale } = useI18n();
 const toast = useToastStore();
+// A phone can't fit the table: each email becomes a stacked list row instead.
+const { xs } = useDisplay();
 
 const emails = ref<OutboxEntry[]>([]);
 const loading = ref(false);
@@ -80,6 +83,44 @@ defineExpose({ refresh });
 			<p v-if="!loading && emails.length === 0" class="text-medium-emphasis">
 				{{ t('sentEmails.empty') }}
 			</p>
+			<v-list v-else-if="xs" class="mx-n4">
+				<v-list-item v-for="email in emails" :key="email.id">
+					<v-list-item-title class="d-flex align-center ga-2">
+						{{ t(`sentEmails.kinds.${email.kind}`) }}
+						<v-chip :color="statusColor[email.status]" size="x-small" label>
+							{{ t(`sentEmails.statuses.${email.status}`) }}
+						</v-chip>
+					</v-list-item-title>
+					<v-list-item-subtitle>{{ email.recipient }}</v-list-item-subtitle>
+					<div class="text-caption text-medium-emphasis mt-1">
+						{{ formatTime(email.sentAt ?? email.createdAt) }}
+					</div>
+					<div v-if="email.subject" class="text-caption text-medium-emphasis">
+						{{ email.subject }}
+					</div>
+					<div
+						v-if="email.status === 'pending' && email.attempts > 0"
+						class="text-caption text-medium-emphasis"
+					>
+						{{ t('sentEmails.nextAttempt', { time: formatTime(email.nextAttemptAt) }) }}
+					</div>
+					<div v-if="email.lastError" class="text-caption text-error">
+						{{ email.lastError }}
+					</div>
+					<v-btn
+						v-if="email.retryable"
+						class="mt-2"
+						size="small"
+						variant="tonal"
+						color="primary"
+						prepend-icon="mdi-email-sync-outline"
+						:loading="retrying === email.id"
+						:disabled="retrying !== null"
+						@click="retry(email)"
+						>{{ t('sentEmails.retry') }}</v-btn
+					>
+				</v-list-item>
+			</v-list>
 			<v-table v-else density="compact">
 				<thead>
 					<tr>

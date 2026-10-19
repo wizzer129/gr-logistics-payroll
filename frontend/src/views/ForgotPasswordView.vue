@@ -34,7 +34,7 @@ async function onSubmit(): Promise<void> {
 <template>
 	<ThemeToggle class="position-fixed top-0 right-0 ma-2" />
 	<v-container class="fill-height" max-width="420">
-		<v-card class="w-100 pa-4" :title="t('auth.forgotTitle')" rounded="lg">
+		<v-card class="w-100 pa-2 pa-sm-4" :title="t('auth.forgotTitle')" rounded="lg">
 			<v-card-text v-if="sent">
 				<v-alert type="success" variant="tonal">{{ t('auth.linkSent') }}</v-alert>
 			</v-card-text>

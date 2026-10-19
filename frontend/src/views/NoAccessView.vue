@@ -19,7 +19,7 @@ async function onLogout(): Promise<void> {
 <template>
 	<ThemeToggle class="position-fixed top-0 right-0 ma-2" />
 	<v-container class="fill-height" max-width="480">
-		<v-card class="w-100 pa-4" :title="t('noAccess.title')" rounded="lg">
+		<v-card class="w-100 pa-2 pa-sm-4" :title="t('noAccess.title')" rounded="lg">
 			<v-card-text>
 				<p class="mb-2">{{ t('noAccess.body') }}</p>
 				<p class="text-medium-emphasis">{{ auth.user?.email }}</p>

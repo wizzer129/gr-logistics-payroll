@@ -86,7 +86,7 @@ const toast = useToastStore();
 // Bumped to remount the entry card, which drops the uploaded CSV and the manual form.
 const entryCardKey = ref(0);
 const history = ref<InstanceType<typeof PaymentHistory> | null>(null);
-// The history gutter is desktop-only; below lg there isn't room beside the two columns.
+// The history is a right-hand gutter from lg up; below that it's inline under the form.
 const { lgAndUp } = useDisplay();
 
 const HISTORY_COLLAPSED_KEY = 'gr-logistics-history-collapsed';
@@ -144,7 +144,7 @@ const paystubData = computed<PaystubData>(() => ({
 
 <template>
 	<v-container>
-		<v-row>
+		<v-row dense class="mb-2">
 			<v-col cols="12" sm="6" md="4" xl="3">
 				<v-select
 					v-model="store.employeeId"
@@ -153,21 +153,24 @@ const paystubData = computed<PaystubData>(() => ({
 					item-value="id"
 					:label="t('dashboard.selectEmployee')"
 					variant="solo-filled"
+					hide-details
 				/>
 			</v-col>
 			<v-col cols="12" sm="6" md="4" xl="3">
 				<v-text-field
 					v-model="store.selectedDate"
 					:label="t('payment.weekOf')"
+					:hint="weekRangeLabel"
+					persistent-hint
 					type="date"
 					variant="solo-filled"
 				/>
-				<div class="text-caption text-medium-emphasis mt-n4 mb-2">{{ weekRangeLabel }}</div>
 			</v-col>
 			<v-col cols="12" sm="6" md="4" xl="3">
 				<v-text-field
 					v-model="store.payday"
 					:label="t('payment.payday')"
+					hide-details
 					type="date"
 					variant="solo-filled"
 				/>
@@ -198,10 +201,10 @@ const paystubData = computed<PaystubData>(() => ({
 					@csv-cleared="onCsvCleared"
 				/>
 			</v-col>
-			<v-col cols="12" md="6">
+			<!-- ga-4 spaces only what's rendered: no gap left by a hidden or empty load list. -->
+			<v-col cols="12" md="6" class="d-flex flex-column ga-4">
 				<LoadList v-if="!store.isLumpSum" :loads="store.loads" @remove="onRemoveLoad" />
 				<PaymentSummary
-					class="mt-4"
 					:summary-total="store.summaryTotal"
 					:employee-cut="store.cut.employeeCut"
 					:rounded-pay="store.cut.roundedPay"
@@ -234,6 +237,13 @@ const paystubData = computed<PaystubData>(() => ({
 		</v-dialog>
 
 		<PaystubPrinter ref="printer" />
+
+		<!-- Below lg there's no room for the gutter, so the history sits under the form. -->
+		<v-row v-if="!lgAndUp">
+			<v-col cols="12">
+				<PaymentHistory ref="history" :collapsible="false" />
+			</v-col>
+		</v-row>
 
 		<!-- A right-hand gutter: full height, fixed to the window while the page scrolls. -->
 		<template v-if="lgAndUp">
@@ -272,6 +282,13 @@ const paystubData = computed<PaystubData>(() => ({
 .paystub-preview {
 	padding: 24px !important;
 	background: rgba(var(--v-theme-on-surface), 0.06);
+}
+
+/* On a phone the desk would eat the paper's width (Vuetify's xs breakpoint). */
+@media (max-width: 599.98px) {
+	.paystub-preview {
+		padding: 8px !important;
+	}
 }
 
 .paystub-preview :deep(.paystub-sheet .paystub) {

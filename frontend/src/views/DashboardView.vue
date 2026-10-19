@@ -88,49 +88,53 @@ onMounted(() => {
 		<h1 class="text-h5 mb-4">{{ t('dashboard.ytdSummary') }}</h1>
 
 		<v-row>
-			<v-col cols="12" sm="6" md="3">
+			<v-col cols="6" md="3">
 				<v-card>
 					<v-card-text>
 						<div class="text-caption text-medium-emphasis">
 							{{ t('dashboard.ytdTotal', { year: summary?.year ?? '' }) }}
 						</div>
-						<div class="text-h5">{{ formatCurrency(summary?.ytdTotal ?? 0) }}</div>
+						<div class="text-h6 text-sm-h5">
+							{{ formatCurrency(summary?.ytdTotal ?? 0) }}
+						</div>
 					</v-card-text>
 				</v-card>
 			</v-col>
-			<v-col cols="12" sm="6" md="3">
+			<v-col cols="6" md="3">
 				<v-card>
 					<v-card-text>
 						<div class="text-caption text-medium-emphasis">
 							{{ t('dashboard.ytdGross', { year: summary?.year ?? '' }) }}
 						</div>
-						<div class="text-h5">{{ formatCurrency(summary?.ytdGross ?? 0) }}</div>
+						<div class="text-h6 text-sm-h5">
+							{{ formatCurrency(summary?.ytdGross ?? 0) }}
+						</div>
 					</v-card-text>
 				</v-card>
 			</v-col>
-			<v-col cols="12" sm="6" md="3">
+			<v-col cols="6" md="3">
 				<v-card>
 					<v-card-text>
 						<div class="text-caption text-medium-emphasis">
 							{{ t('dashboard.paycheckCount') }}
 						</div>
-						<div class="text-h5">{{ summary?.paycheckCount ?? 0 }}</div>
+						<div class="text-h6 text-sm-h5">{{ summary?.paycheckCount ?? 0 }}</div>
 					</v-card-text>
 				</v-card>
 			</v-col>
-			<v-col cols="12" sm="6" md="3">
+			<v-col cols="6" md="3">
 				<v-card>
 					<v-card-text>
 						<div class="text-caption text-medium-emphasis">
 							{{ t('dashboard.totalLoads') }}
 						</div>
-						<div class="text-h5">{{ summary?.totalLoads ?? 0 }}</div>
+						<div class="text-h6 text-sm-h5">{{ summary?.totalLoads ?? 0 }}</div>
 					</v-card-text>
 				</v-card>
 			</v-col>
 		</v-row>
 
-		<v-row class="mt-2">
+		<v-row>
 			<v-col cols="12" md="6">
 				<v-card class="h-100" :title="t('dashboard.byEmployee')">
 					<v-card-text>
@@ -152,7 +156,7 @@ onMounted(() => {
 			</v-col>
 		</v-row>
 
-		<v-card class="mt-4" :title="t('dashboard.employeeSummary')">
+		<v-card class="mt-6" :title="t('dashboard.employeeSummary')">
 			<v-card-text>
 				<v-select
 					v-model="selectedEmployeeId"

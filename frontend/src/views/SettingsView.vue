@@ -66,7 +66,7 @@ async function save(): Promise<void> {
 
 		<v-row>
 			<v-col cols="12" md="6">
-				<v-card :title="t('settings.monthlyTitle')" :loading="loading" class="mb-4">
+				<v-card :title="t('settings.monthlyTitle')" :loading="loading" class="h-100">
 					<v-card-text>
 						<p class="mb-4 text-medium-emphasis">{{ t('settings.monthlyHint') }}</p>
 						<RecipientSelect
@@ -89,7 +89,7 @@ async function save(): Promise<void> {
 				</v-card>
 			</v-col>
 			<v-col cols="12" md="6">
-				<MonthlyReportSendCard @queued="sentEmails?.refresh()" />
+				<MonthlyReportSendCard class="h-100" @queued="sentEmails?.refresh()" />
 			</v-col>
 			<v-col cols="12">
 				<SentEmailsCard ref="sentEmails" />

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
 import { useEmployees, type EmployeeOption } from '../composables/useEmployees';
 import { calculateEmployeeCut, DEFAULT_PAY_RATE_PERCENT } from '../utils/payment-calc';
 import { formatCurrency } from '../utils/currency';
@@ -34,6 +35,8 @@ type PaycheckLogRow = {
 };
 
 const { t, locale } = useI18n();
+// Phones get stacked list rows instead of the 7-column table, and a fullscreen edit dialog.
+const { xs } = useDisplay();
 const toast = useToastStore();
 const confirmDialog = useConfirmStore();
 const { confirmDiscard, guardLeave } = useUnsavedChanges();
@@ -278,7 +281,7 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 	<v-container>
 		<h1 class="text-h5 mb-4">{{ t('nav.editPayment') }}</h1>
 
-		<v-row>
+		<v-row dense class="mb-2">
 			<v-col cols="12" md="4">
 				<v-select
 					v-model="employeeId"
@@ -288,20 +291,72 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 					:label="t('dashboard.selectEmployee')"
 					:placeholder="t('common.allEmployees')"
 					clearable
+					hide-details
 				/>
 			</v-col>
-			<v-col cols="12" md="3">
-				<v-text-field v-model="from" :label="t('common.from')" type="date" />
+			<v-col cols="6" md="3">
+				<v-text-field v-model="from" :label="t('common.from')" type="date" hide-details />
 			</v-col>
-			<v-col cols="12" md="3">
-				<v-text-field v-model="to" :label="t('common.to')" type="date" />
+			<v-col cols="6" md="3">
+				<v-text-field v-model="to" :label="t('common.to')" type="date" hide-details />
 			</v-col>
 			<v-col cols="12" md="2" class="d-flex align-center">
-				<v-btn block color="primary" @click="search">{{ t('common.search') }}</v-btn>
+				<v-btn block color="primary" size="large" @click="search">{{
+					t('common.search')
+				}}</v-btn>
 			</v-col>
 		</v-row>
 
-		<v-table density="compact" striped="odd">
+		<v-list v-if="xs" class="rounded" lines="two">
+			<v-list-item v-for="log in pagedResults" :key="log.id">
+				<v-list-item-title>{{ log.firstName }} {{ log.lastName }}</v-list-item-title>
+				<v-list-item-subtitle>
+					{{ formatMonthDay(log.weekStart, locale) }} –
+					{{ formatMonthDay(log.weekEnd, locale) }} · {{ t('payment.payday') }}
+					{{ formatMonthDay(log.payday, locale) }}
+				</v-list-item-subtitle>
+				<div class="d-flex align-center ga-2 mt-1">
+					<strong>{{ formatCurrency(log.employeeCut) }}</strong>
+					<span class="text-body-2 text-medium-emphasis">{{
+						t(`payment.statuses.${log.status}`)
+					}}</span>
+					<v-chip
+						v-if="log.kind === 'lump_sum'"
+						size="x-small"
+						variant="outlined"
+						color="primary"
+						>{{ t('payment.lumpSum') }}</v-chip
+					>
+				</div>
+				<template #append>
+					<div class="d-flex flex-column">
+						<v-btn
+							icon="mdi-pencil"
+							size="small"
+							variant="text"
+							:aria-label="t('common.edit')"
+							@click="openEdit(log)"
+						/>
+						<v-btn
+							v-if="log.status === 'completed'"
+							icon="mdi-email-outline"
+							size="small"
+							variant="text"
+							:aria-label="t('emailPaystub.title')"
+							@click="openEmail(log)"
+						/>
+						<v-btn
+							icon="mdi-delete"
+							size="small"
+							variant="text"
+							:aria-label="t('common.delete')"
+							@click="onDelete(log)"
+						/>
+					</div>
+				</template>
+			</v-list-item>
+		</v-list>
+		<v-table v-else density="compact" striped="odd">
 			<thead>
 				<tr>
 					<th>{{ t('employees.firstName') }} {{ t('employees.lastName') }}</th>
@@ -359,7 +414,7 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 			</tbody>
 		</v-table>
 
-		<div class="d-flex flex-wrap align-center ga-4 mt-2">
+		<div class="d-flex flex-wrap align-center ga-2 ga-sm-4 mt-4">
 			<v-select
 				v-model="pageSize"
 				:items="PAGE_SIZE_OPTIONS"
@@ -383,28 +438,33 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 		<v-dialog
 			:model-value="editDialog"
 			max-width="900"
+			:fullscreen="xs"
+			scrollable
 			@update:model-value="
 				(value: boolean) => (value ? (editDialog = true) : requestCloseEdit())
 			"
 		>
 			<v-card :title="t('payment.editTitle')">
-				<v-card-text>
+				<!-- Scrollable, so it clips: room for the first outlined field's floating label. -->
+				<v-card-text class="pt-4">
 					<v-alert v-if="editError" type="error" density="compact" class="mb-4">{{
 						editError
 					}}</v-alert>
 					<v-row>
-						<v-col cols="12" md="4">
+						<v-col cols="6" md="4">
 							<v-text-field
 								v-model="editForm.weekStart"
 								:label="t('payment.weekStart')"
 								type="date"
+								hide-details
 							/>
 						</v-col>
-						<v-col cols="12" md="4">
+						<v-col cols="6" md="4">
 							<v-text-field
 								v-model="editForm.weekEnd"
 								:label="t('payment.weekEnd')"
 								type="date"
+								hide-details
 							/>
 						</v-col>
 						<v-col cols="12" md="4">
@@ -412,6 +472,7 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 								v-model="editForm.payday"
 								:label="t('payment.payday')"
 								type="date"
+								hide-details
 							/>
 						</v-col>
 					</v-row>
@@ -430,8 +491,13 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 							/>
 						</v-col>
 						<v-col v-else cols="12" md="6">
-							<v-card :title="t('payment.addManualLoad')">
-								<v-card-text>
+							<!-- Flat on a phone: a card inside the dialog's card doubles the side padding. -->
+							<v-card
+								:title="t('payment.addManualLoad')"
+								:flat="xs"
+								:class="{ 'flat-load-card': xs }"
+							>
+								<v-card-text :class="{ 'px-0': xs }">
 									<LoadForm
 										ref="editLoadForm"
 										button-variant="outlined"
@@ -440,26 +506,26 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 								</v-card-text>
 							</v-card>
 						</v-col>
-						<v-col cols="12" md="6">
+						<v-col cols="12" md="6" class="d-flex flex-column ga-4">
 							<LoadList
 								v-if="!editIsLumpSum"
 								:loads="editLoads"
 								@remove="onEditRemoveLoad"
 							/>
 
-							<v-card :class="{ 'mt-4': !editIsLumpSum }">
+							<v-card>
 								<v-card-text>
-									<div class="d-flex justify-space-between">
+									<div class="d-flex justify-space-between py-1">
 										<span>{{ t('payment.summaryTotal') }}</span
 										><strong>{{ formatCurrency(editSummaryTotal) }}</strong>
 									</div>
-									<div class="d-flex justify-space-between">
+									<div class="d-flex justify-space-between py-1">
 										<span>{{
 											t('payment.employeeCut', { rate: editRatePercent })
 										}}</span
 										><strong>{{ formatCurrency(editCut.employeeCut) }}</strong>
 									</div>
-									<div class="d-flex justify-space-between">
+									<div class="d-flex justify-space-between py-1">
 										<span>{{ t('payment.totalPay') }}</span
 										><strong>{{ formatCurrency(editCut.roundedPay) }}</strong>
 									</div>
@@ -468,7 +534,7 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 						</v-col>
 					</v-row>
 				</v-card-text>
-				<v-card-actions>
+				<v-card-actions class="flex-wrap">
 					<v-btn variant="outlined" prepend-icon="mdi-printer" @click="onPrintPaystub">{{
 						t('payment.printPaystub')
 					}}</v-btn>
@@ -521,5 +587,10 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 <style scoped>
 .page-size {
 	max-width: 8rem;
+}
+
+/* Line the nested card's title up with the dialog's fields. */
+.flat-load-card :deep(.v-card-item) {
+	padding-inline: 0;
 }
 </style>

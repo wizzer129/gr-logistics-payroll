@@ -1,15 +1,39 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
+import { useDisplay } from 'vuetify';
 import type { Load } from '../../store/payment-processing-store';
 import { formatCurrency } from '../../utils/currency';
 
 const { t } = useI18n();
+// A phone can't fit five columns: each load becomes a two-line list row instead.
+const { xs } = useDisplay();
 defineProps<{ loads: Load[] }>();
 const emit = defineEmits<{ remove: [index: number] }>();
 </script>
 
 <template>
-	<v-table class="pa-2" density="comfortable" striped="odd">
+	<!-- Empty on a phone renders nothing, so it leaves no gap. -->
+	<template v-if="xs">
+		<v-list v-if="loads.length" class="rounded">
+			<v-list-item
+				v-for="(load, index) in loads"
+				:key="index"
+				:title="load.storeName"
+				:subtitle="`${load.loadDate.slice(0, 10)} · ${t('payment.pay')} ${formatCurrency(load.pay)} · ${t('payment.extraPay')} ${formatCurrency(load.extraPay ?? 0)}`"
+			>
+				<template #append>
+					<v-btn
+						icon="mdi-delete"
+						size="small"
+						variant="text"
+						:aria-label="t('common.delete')"
+						@click="emit('remove', index)"
+					/>
+				</template>
+			</v-list-item>
+		</v-list>
+	</template>
+	<v-table v-else density="comfortable" striped="odd">
 		<thead>
 			<tr>
 				<th class="text-start">{{ t('payment.date') }}</th>
@@ -31,6 +55,7 @@ const emit = defineEmits<{ remove: [index: number] }>();
 						icon="mdi-delete"
 						size="small"
 						variant="text"
+						:aria-label="t('common.delete')"
 						@click="emit('remove', index)"
 					/>
 				</td>

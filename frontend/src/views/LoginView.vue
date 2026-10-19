@@ -35,7 +35,7 @@ async function onSubmit(): Promise<void> {
 <template>
 	<ThemeToggle class="position-fixed top-0 right-0 ma-2" />
 	<v-container class="fill-height" max-width="420">
-		<v-card class="w-100 pa-4" :title="t('app.title')" rounded="lg">
+		<v-card class="w-100 pa-2 pa-sm-4" :title="t('app.title')" rounded="lg">
 			<v-form @submit.prevent="onSubmit">
 				<v-card-text>
 					<v-text-field v-model="email" :label="t('auth.email')" type="email" required />

@@ -21,6 +21,8 @@ type HistoryRow = {
 const MAX_ROWS = 10;
 
 const { t, locale } = useI18n();
+// In the desktop gutter it collapses; inline (below lg) it's always shown.
+const { collapsible = true } = defineProps<{ collapsible?: boolean }>();
 const emit = defineEmits<{ collapse: [] }>();
 const rows = ref<HistoryRow[]>([]);
 const loading = ref(false);
@@ -56,7 +58,7 @@ const timeFormatter = computed(
 
 <template>
 	<v-card :title="t('history.title')" :loading="loading" flat class="history">
-		<template #append>
+		<template v-if="collapsible" #append>
 			<v-btn
 				icon="mdi-chevron-right"
 				:aria-label="t('history.collapse')"
