@@ -218,6 +218,7 @@
 		"body": "Su cuenta puede recibir correos de GR Logistics, pero no tiene acceso a la aplicación."
 	},
 	"emailPaystub": {
+		"short": "Correo",
 		"title": "Enviar talón por correo",
 		"intro": "El talón de pago se envía en PDF a cada persona que elija, en su propio idioma.",
 		"recipients": "Enviar a",

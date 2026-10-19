@@ -10,6 +10,7 @@ import type { Load } from '../store/payment-processing-store';
 import LoadForm from '../components/payment-processing/LoadForm.vue';
 import LoadList from '../components/payment-processing/LoadList.vue';
 import PaystubPrinter from '../components/payment-processing/PaystubPrinter.vue';
+import PaystubPreviewDialog from '../components/payment-processing/PaystubPreviewDialog.vue';
 import EmailPaystubDialog from '../components/email/EmailPaystubDialog.vue';
 import type { PaystubData } from '../components/payment-processing/Paystub.vue';
 import { useConfirmStore } from '../store/confirm-store';
@@ -218,7 +219,8 @@ async function saveEdit(complete = false): Promise<void> {
 	await search();
 }
 
-// Prints what's in the dialog right now, saved or not.
+// Previews and prints what's in the dialog right now, saved or not.
+const paystubOpen = ref(false);
 const printer = ref<InstanceType<typeof PaystubPrinter> | null>(null);
 
 const editPaystub = computed<PaystubData | null>(() => {
@@ -534,47 +536,81 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 						</v-col>
 					</v-row>
 				</v-card-text>
-				<v-card-actions class="flex-wrap">
-					<v-btn variant="outlined" prepend-icon="mdi-printer" @click="onPrintPaystub">{{
-						t('payment.printPaystub')
-					}}</v-btn>
-					<v-tooltip
-						v-if="editingLog?.status === 'completed'"
-						:text="t('emailPaystub.saveFirst')"
-						:disabled="!editIsDirty"
-						location="top"
-					>
-						<template #activator="{ props: tooltip }">
-							<span v-bind="tooltip">
-								<v-btn
-									variant="outlined"
-									prepend-icon="mdi-email-outline"
-									:disabled="editIsDirty"
-									@click="openEmail(editingLog)"
-									>{{ t('emailPaystub.title') }}</v-btn
-								>
-							</span>
-						</template>
-					</v-tooltip>
-					<v-spacer />
-					<v-btn variant="outlined" @click="requestCloseEdit">{{
-						t('common.cancel')
-					}}</v-btn>
-					<v-btn variant="outlined" color="primary" @click="saveEdit()">{{
-						t('common.save')
-					}}</v-btn>
-					<!-- Only drafts can be completed; a completed log just saves. -->
-					<v-btn
-						v-if="editingLog?.status === 'draft'"
-						variant="outlined"
-						color="success"
-						@click="saveEdit(true)"
-						>{{ t('payment.complete') }}</v-btn
-					>
+				<v-divider />
+				<!-- Two groups: what you can do with the pay stub (left), and the dialog's own
+				     decision (right). On a phone each group is a row of equal-width buttons. -->
+				<v-card-actions class="edit-actions" :class="{ stacked: xs }">
+					<div class="action-group">
+						<v-btn
+							variant="text"
+							prepend-icon="mdi-file-document-outline"
+							:stacked="xs"
+							:size="xs ? 'small' : undefined"
+							@click="paystubOpen = true"
+							>{{ t('payment.viewPaystub') }}</v-btn
+						>
+						<v-btn
+							variant="text"
+							prepend-icon="mdi-printer"
+							:stacked="xs"
+							:size="xs ? 'small' : undefined"
+							@click="onPrintPaystub"
+							>{{ t('payment.print') }}</v-btn
+						>
+						<!-- The email sends the saved log, so it waits for unsaved edits. -->
+						<v-tooltip
+							v-if="editingLog?.status === 'completed'"
+							:text="t('emailPaystub.saveFirst')"
+							:disabled="!editIsDirty"
+							location="top"
+						>
+							<template #activator="{ props: tooltip }">
+								<span v-bind="tooltip" class="d-flex">
+									<v-btn
+										variant="text"
+										prepend-icon="mdi-email-outline"
+										:stacked="xs"
+										:size="xs ? 'small' : undefined"
+										:disabled="editIsDirty"
+										class="flex-grow-1"
+										@click="openEmail(editingLog)"
+										>{{ t('emailPaystub.short') }}</v-btn
+									>
+								</span>
+							</template>
+						</v-tooltip>
+					</div>
+					<!-- Vuetify right-aligns dialog actions; this pushes the stub group left. -->
+					<v-spacer v-if="!xs" />
+					<div class="action-group">
+						<v-btn variant="text" @click="requestCloseEdit">{{
+							t('common.cancel')
+						}}</v-btn>
+						<!-- A draft's main action is Complete; a completed log's is Save. -->
+						<v-btn
+							:variant="editingLog?.status === 'draft' ? 'tonal' : 'flat'"
+							color="primary"
+							@click="saveEdit()"
+							>{{ t('common.save') }}</v-btn
+						>
+						<v-btn
+							v-if="editingLog?.status === 'draft'"
+							variant="flat"
+							color="success"
+							@click="saveEdit(true)"
+							>{{ t('payment.complete') }}</v-btn
+						>
+					</div>
 				</v-card-actions>
 			</v-card>
 		</v-dialog>
 
+		<PaystubPreviewDialog
+			v-if="editPaystub"
+			v-model="paystubOpen"
+			:stub="editPaystub"
+			@print="onPrintPaystub"
+		/>
 		<PaystubPrinter ref="printer" />
 		<EmailPaystubDialog
 			v-model="emailOpen"
@@ -587,6 +623,28 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 <style scoped>
 .page-size {
 	max-width: 8rem;
+}
+
+.edit-actions {
+	flex-wrap: wrap;
+	padding-inline: 16px;
+}
+
+.action-group {
+	display: flex;
+	gap: 8px;
+}
+
+/* Phone: two full-width rows, each split into equal buttons. */
+.edit-actions.stacked {
+	flex-direction: column;
+	align-items: stretch;
+}
+
+.edit-actions.stacked .action-group {
+	display: grid;
+	grid-auto-flow: column;
+	grid-auto-columns: 1fr;
 }
 
 /* Line the nested card's title up with the dialog's fields. */

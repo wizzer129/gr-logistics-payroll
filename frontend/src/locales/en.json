@@ -218,6 +218,7 @@
 		"body": "Your account can receive emails from GR Logistics, but it doesn't have access to the app."
 	},
 	"emailPaystub": {
+		"short": "Email",
 		"title": "Email pay stub",
 		"intro": "The pay stub goes out as a PDF to each person you pick, in their own language.",
 		"recipients": "Send to",

@@ -12,7 +12,7 @@ import LoadEntryCard from '../components/payment-processing/LoadEntryCard.vue';
 import LoadList from '../components/payment-processing/LoadList.vue';
 import PaymentSummary from '../components/payment-processing/PaymentSummary.vue';
 import PaymentHistory from '../components/payment-processing/PaymentHistory.vue';
-import PaystubSheet from '../components/payment-processing/PaystubSheet.vue';
+import PaystubPreviewDialog from '../components/payment-processing/PaystubPreviewDialog.vue';
 import PaystubPrinter from '../components/payment-processing/PaystubPrinter.vue';
 import type { PaystubData } from '../components/payment-processing/Paystub.vue';
 
@@ -219,22 +219,7 @@ const paystubData = computed<PaystubData>(() => ({
 			</v-col>
 		</v-row>
 
-		<v-dialog v-model="paystubOpen" width="auto" scrollable>
-			<v-card>
-				<v-card-text class="paystub-preview">
-					<PaystubSheet :stub="paystubData" />
-				</v-card-text>
-				<v-card-actions>
-					<v-spacer />
-					<v-btn variant="outlined" prepend-icon="mdi-printer" @click="onPrintPaystub">{{
-						t('payment.print')
-					}}</v-btn>
-					<v-btn variant="outlined" @click="paystubOpen = false">{{
-						t('common.close')
-					}}</v-btn>
-				</v-card-actions>
-			</v-card>
-		</v-dialog>
+		<PaystubPreviewDialog v-model="paystubOpen" :stub="paystubData" @print="onPrintPaystub" />
 
 		<PaystubPrinter ref="printer" />
 
@@ -276,22 +261,5 @@ const paystubData = computed<PaystubData>(() => ({
 	right: 0;
 	z-index: 1004;
 	border-radius: 6px 0px 0px 6px;
-}
-
-/* A neutral "desk" around the paper so the stub reads as a document in either theme. */
-.paystub-preview {
-	padding: 24px !important;
-	background: rgba(var(--v-theme-on-surface), 0.06);
-}
-
-/* On a phone the desk would eat the paper's width (Vuetify's xs breakpoint). */
-@media (max-width: 599.98px) {
-	.paystub-preview {
-		padding: 8px !important;
-	}
-}
-
-.paystub-preview :deep(.paystub-sheet .paystub) {
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
 </style>
