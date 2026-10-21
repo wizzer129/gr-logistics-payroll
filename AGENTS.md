@@ -120,10 +120,14 @@ Designed in [EMAIL-SPEC.md](./EMAIL-SPEC.md); that file tracks which phases are 
   which is committed.** After editing a template run `bun run emails:build` and commit the
   output; CI fails otherwise. Runtime placeholders go in `<Raw>{{ … }}</Raw>`, and all text
   comes from `backend/locales/email/{en,es}.json` (no literal copy in templates).
-- **Recipients are picked, never typed:** `RecipientSelect.vue` (users and/or employees with
-  an email) sends ids, and `services::email_recipients::resolve()` turns them into
-  addresses, each in its recipient's saved language (`users.locale` follows the UI's,
-  `employees.locale` is on the employee form).
+- **Recipients are picked, or typed for pay stubs:** `RecipientSelect.vue` (users and/or
+  employees with an email) sends ids, and `services::email_recipients::resolve()` turns them
+  into addresses, each in its recipient's saved language (`users.locale` follows the UI's,
+  `employees.locale` is on the employee form). Pay stub emails (`allow-typed`) also take
+  addresses typed in by hand (`emails`, validated server-side, written in the sender's
+  language); the monthly report stays picked-users-only. Several pay stubs go out as one
+  `paystubs` email per recipient (`POST /api/email/paystubs`), and an employee can only be
+  picked when every stub is theirs (`RECIPIENT_NOT_ALLOWED`).
 - **The monthly report buckets paychecks by payday**, not `week_start` like the dashboard
   (decided with the owner: it's a record of money paid out that month). The scheduler
   (`email/scheduler.rs`) sends it from 08:00 America/Los_Angeles on the 1st, catching up

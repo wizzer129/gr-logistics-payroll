@@ -26,6 +26,16 @@
 		"attached": "The printable pay stub is attached as a PDF.",
 		"filename": "pay-stub"
 	},
+	"paystubs": {
+		"subject": "Pay stubs ({{ count }})",
+		"heading": "Pay stubs",
+		"intro": "Ready to print: one PDF per pay stub.",
+		"employee": "Employee",
+		"work_week": "Work week",
+		"payday": "Payday",
+		"total_pay": "Total pay",
+		"attached": "The printable pay stubs are attached as PDFs."
+	},
 	"paystub_pdf": {
 		"company": "GR Logistics",
 		"title": "Pay Stub",

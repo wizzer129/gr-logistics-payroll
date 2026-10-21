@@ -74,6 +74,43 @@ pub async fn compose(
 				attachments: vec![pdf_attachment(filename, bytes)],
 			})
 		}
+		Message::Paystubs { paycheck_log_ids } => {
+			let strings = renderer.strings(locale);
+			let mut stubs = Vec::new();
+			let mut attachments = Vec::new();
+			for id in paycheck_log_ids {
+				// Deleted since it was queued: send the rest.
+				let Some(source) = paystubs::source(pool, *id).await? else {
+					continue;
+				};
+				let document = pdf::paystub::document(&source, locale, &strings["paystub_pdf"]);
+				stubs.push(json!({
+					"employee_name": document.employee_name,
+					"week": document.week,
+					"payday": document.payday,
+					"total_pay": document.rounded_pay,
+				}));
+				let filename = format!(
+					"{}-{}-{}.pdf",
+					strings["paystub"]["filename"]
+						.as_str()
+						.unwrap_or("pay-stub"),
+					slug(&source.employee_name),
+					source.week_start,
+				);
+				let bytes = render_pdf(move || pdf::paystub(&document)).await?;
+				attachments.push(pdf_attachment(filename, bytes));
+			}
+			if stubs.is_empty() {
+				return Err(ComposeError::Permanent("paycheck logs not found".into()));
+			}
+			Ok(Composed {
+				template,
+				// A string: serde_json's exact-number mode doesn't render as a number here.
+				context: json!({ "count": stubs.len().to_string(), "stubs": stubs }),
+				attachments,
+			})
+		}
 		Message::MonthlyReport { month } => {
 			let source = monthly_report::source(pool, *month).await?;
 			let strings = renderer.strings(locale);

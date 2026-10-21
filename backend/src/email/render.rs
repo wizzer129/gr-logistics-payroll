@@ -170,6 +170,18 @@ mod tests {
 				}),
 			),
 			(
+				"paystubs",
+				json!({
+					"count": "2",
+					"stubs": [
+						{ "employee_name": "SAMPLE-1", "week": "Oct 4 – Oct 10, 2026",
+						  "payday": "Oct 16, 2026", "total_pay": "$441.00" },
+						{ "employee_name": "SAMPLE-2", "week": "Oct 4 – Oct 10, 2026",
+						  "payday": "Oct 16, 2026", "total_pay": "$300.00" },
+					],
+				}),
+			),
+			(
 				"monthly-report",
 				json!({
 					"month": "September 2026", "total_paid": "$2,100.00",

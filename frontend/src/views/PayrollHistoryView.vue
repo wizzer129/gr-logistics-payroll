@@ -5,37 +5,22 @@ import { useDisplay } from 'vuetify';
 import { useEmployees, type EmployeeOption } from '../composables/useEmployees';
 import { calculateEmployeeCut, DEFAULT_PAY_RATE_PERCENT } from '../utils/payment-calc';
 import { formatCurrency } from '../utils/currency';
-import { formatMonthDay } from '../utils/week';
 import type { Load } from '../store/payment-processing-store';
 import LoadForm from '../components/payment-processing/LoadForm.vue';
 import LoadList from '../components/payment-processing/LoadList.vue';
 import PaystubPrinter from '../components/payment-processing/PaystubPrinter.vue';
 import PaystubPreviewDialog from '../components/payment-processing/PaystubPreviewDialog.vue';
-import EmailPaystubDialog from '../components/email/EmailPaystubDialog.vue';
+import EmailPaystubDialog, { type EmailableLog } from '../components/email/EmailPaystubDialog.vue';
 import type { PaystubData } from '../components/payment-processing/Paystub.vue';
 import { useConfirmStore } from '../store/confirm-store';
 import { useUnsavedChanges } from '../composables/useUnsavedChanges';
 import { useToastStore } from '../store/toast-store';
 import { ApiError, apiJson, apiRequest } from '../utils/api';
+import PayrollHistoryTable from '../components/payroll-history/PayrollHistoryTable.vue';
+import PayrollHistoryList from '../components/payroll-history/PayrollHistoryList.vue';
+import type { PaycheckLogRow } from '../components/payroll-history/types';
 
-type PaycheckLogRow = {
-	id: string;
-	employeeId: string;
-	weekStart: string;
-	weekEnd: string;
-	payday: string;
-	status: 'draft' | 'completed';
-	/** `loads` or `lump_sum` (no loads, paid in full). */
-	kind: 'loads' | 'lump_sum';
-	summaryTotal: number;
-	employeeCut: number;
-	// The rate this log's cut was computed at; the backend recomputes edits at it too.
-	payRatePercent: number;
-	firstName: string;
-	lastName: string;
-};
-
-const { t, locale } = useI18n();
+const { t } = useI18n();
 // Phones get stacked list rows instead of the 7-column table, and a fullscreen edit dialog.
 const { xs } = useDisplay();
 const toast = useToastStore();
@@ -242,11 +227,31 @@ const editPaystub = computed<PaystubData | null>(() => {
 
 // The email always sends the saved log, so it's only offered for completed logs, and
 // in the edit dialog only once its changes are saved.
-const emailLog = ref<PaycheckLogRow | null>(null);
+const emailLogs = ref<EmailableLog[]>([]);
 const emailOpen = ref(false);
 
 function openEmail(log: PaycheckLogRow): void {
-	emailLog.value = log;
+	emailLogs.value = [log];
+	emailOpen.value = true;
+}
+
+// --- Selection: completed logs only (drafts can't be emailed), kept across pages. The
+// table / list toggle it; here it's kept, pruned and emailed. ---
+
+const selectedIds = ref<string[]>([]);
+const selectedLogs = computed(() =>
+	results.value.filter((log) => selectedIds.value.includes(log.id)),
+);
+
+// A new search starts over; a deleted log drops out.
+watch(results, (rows) => {
+	const ids = new Set(rows.map((log) => log.id));
+	selectedIds.value = selectedIds.value.filter((id) => ids.has(id));
+});
+
+function emailSelected(): void {
+	// In the table's order, which is the email's order.
+	emailLogs.value = selectedLogs.value;
 	emailOpen.value = true;
 }
 
@@ -281,7 +286,7 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 
 <template>
 	<v-container>
-		<h1 class="text-h5 mb-4">{{ t('nav.editPayment') }}</h1>
+		<h1 class="text-h5 mb-4">{{ t('nav.payrollHistory') }}</h1>
 
 		<v-row dense class="mb-2">
 			<v-col cols="12" md="4">
@@ -309,112 +314,46 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 			</v-col>
 		</v-row>
 
-		<v-list v-if="xs" class="rounded" lines="two">
-			<v-list-item v-for="log in pagedResults" :key="log.id">
-				<v-list-item-title>{{ log.firstName }} {{ log.lastName }}</v-list-item-title>
-				<v-list-item-subtitle>
-					{{ formatMonthDay(log.weekStart, locale) }} –
-					{{ formatMonthDay(log.weekEnd, locale) }} · {{ t('payment.payday') }}
-					{{ formatMonthDay(log.payday, locale) }}
-				</v-list-item-subtitle>
-				<div class="d-flex align-center ga-2 mt-1">
-					<strong>{{ formatCurrency(log.employeeCut) }}</strong>
-					<span class="text-body-2 text-medium-emphasis">{{
-						t(`payment.statuses.${log.status}`)
-					}}</span>
-					<v-chip
-						v-if="log.kind === 'lump_sum'"
-						size="x-small"
-						variant="outlined"
-						color="primary"
-						>{{ t('payment.lumpSum') }}</v-chip
-					>
-				</div>
-				<template #append>
-					<div class="d-flex flex-column">
-						<v-btn
-							icon="mdi-pencil"
-							size="small"
-							variant="text"
-							:aria-label="t('common.edit')"
-							@click="openEdit(log)"
-						/>
-						<v-btn
-							v-if="log.status === 'completed'"
-							icon="mdi-email-outline"
-							size="small"
-							variant="text"
-							:aria-label="t('emailPaystub.title')"
-							@click="openEmail(log)"
-						/>
-						<v-btn
-							icon="mdi-delete"
-							size="small"
-							variant="text"
-							:aria-label="t('common.delete')"
-							@click="onDelete(log)"
-						/>
-					</div>
-				</template>
-			</v-list-item>
-		</v-list>
-		<v-table v-else density="compact" striped="odd">
-			<thead>
-				<tr>
-					<th>{{ t('employees.firstName') }} {{ t('employees.lastName') }}</th>
-					<th>{{ t('payment.weekStart') }}</th>
-					<th>{{ t('payment.weekEnd') }}</th>
-					<th>{{ t('payment.payday') }}</th>
-					<th>{{ t('payment.status') }}</th>
-					<th class="text-right">{{ t('payment.totalPay') }}</th>
-					<th>{{ t('common.actions') }}</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr v-for="log in pagedResults" :key="log.id">
-					<td>{{ log.firstName }} {{ log.lastName }}</td>
-					<td>{{ formatMonthDay(log.weekStart, locale) }}</td>
-					<td>{{ formatMonthDay(log.weekEnd, locale) }}</td>
-					<td>{{ formatMonthDay(log.payday, locale) }}</td>
-					<td>
-						{{ t(`payment.statuses.${log.status}`) }}
-						<v-chip
-							v-if="log.kind === 'lump_sum'"
-							size="x-small"
-							variant="outlined"
-							color="primary"
-							class="ml-1"
-							>{{ t('payment.lumpSum') }}</v-chip
-						>
-					</td>
-					<td class="text-right">{{ formatCurrency(log.employeeCut) }}</td>
-					<td>
-						<v-btn
-							icon="mdi-pencil"
-							size="small"
-							variant="text"
-							:aria-label="t('common.edit')"
-							@click="openEdit(log)"
-						/>
-						<v-btn
-							v-if="log.status === 'completed'"
-							icon="mdi-email-outline"
-							size="small"
-							variant="text"
-							:aria-label="t('emailPaystub.title')"
-							@click="openEmail(log)"
-						/>
-						<v-btn
-							icon="mdi-delete"
-							size="small"
-							variant="text"
-							:aria-label="t('common.delete')"
-							@click="onDelete(log)"
-						/>
-					</td>
-				</tr>
-			</tbody>
-		</v-table>
+		<!-- Shown while anything is selected: what's picked, and what to do with it. -->
+		<v-sheet
+			v-if="selectedIds.length"
+			color="info"
+			rounded
+			class="selection-bar d-flex flex-wrap align-center ga-2 px-4 py-2 mb-2"
+		>
+			<span class="font-weight-medium">{{
+				t('payments.selected', { count: selectedIds.length })
+			}}</span>
+			<v-spacer />
+			<v-btn variant="text" @click="selectedIds = []">{{
+				t('payments.clearSelection')
+			}}</v-btn>
+			<v-btn
+				variant="flat"
+				color="surface"
+				prepend-icon="mdi-email-multiple-outline"
+				:block="xs"
+				@click="emailSelected"
+				>{{ t('emailPaystub.emailSelected') }}</v-btn
+			>
+		</v-sheet>
+
+		<PayrollHistoryList
+			v-if="xs"
+			v-model:selected-ids="selectedIds"
+			:rows="pagedResults"
+			@edit="openEdit"
+			@email="openEmail"
+			@delete="onDelete"
+		/>
+		<PayrollHistoryTable
+			v-else
+			v-model:selected-ids="selectedIds"
+			:rows="pagedResults"
+			@edit="openEdit"
+			@email="openEmail"
+			@delete="onDelete"
+		/>
 
 		<div class="d-flex flex-wrap align-center ga-2 ga-sm-4 mt-4">
 			<v-select
@@ -612,11 +551,7 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 			@print="onPrintPaystub"
 		/>
 		<PaystubPrinter ref="printer" />
-		<EmailPaystubDialog
-			v-model="emailOpen"
-			:log-id="emailLog?.id ?? null"
-			:employee-id="emailLog?.employeeId ?? null"
-		/>
+		<EmailPaystubDialog v-model="emailOpen" :logs="emailLogs" />
 	</v-container>
 </template>
 

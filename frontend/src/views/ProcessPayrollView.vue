@@ -57,10 +57,9 @@ const entryCard = ref<InstanceType<typeof LoadEntryCard> | null>(null);
 
 // Loads or a lump sum entered but not yet saved. The store outlives this view, so leaving
 // anyway clears it — otherwise the "lost" work would reappear on the next visit.
-useUnsavedChanges().guardLeave(
-	() => store.loads.length > 0 || store.lumpSum > 0 || Boolean(entryCard.value?.isDirty),
-	() => store.reset(),
-);
+const { guardLeave, confirmDiscard } = useUnsavedChanges();
+const hasUnsavedWork = () => store.isDirty || Boolean(entryCard.value?.isDirty);
+guardLeave(hasUnsavedWork, () => store.reset());
 
 // A CSV is one employee's whole week: it replaces the current loads, sets the employee,
 // week and payday from the file. Totals and the cut are computed here, not read from it.
@@ -87,7 +86,7 @@ const toast = useToastStore();
 const entryCardKey = ref(0);
 const history = ref<InstanceType<typeof PaymentHistory> | null>(null);
 // The history is a right-hand gutter from lg up; below that it's inline under the form.
-const { lgAndUp } = useDisplay();
+const { lgAndUp, xs } = useDisplay();
 
 const HISTORY_COLLAPSED_KEY = 'gr-logistics-history-collapsed';
 const historyCollapsed = ref(localStorage.getItem(HISTORY_COLLAPSED_KEY) === 'true');
@@ -109,10 +108,19 @@ async function onSubmit(complete: boolean): Promise<void> {
 	}
 
 	toast.success(t(complete ? 'payment.processed' : 'payment.draftSaved'));
+	// A draft stays on screen to keep working on; "Process next" starts over.
+	if (complete) startOver();
+	await history.value?.refresh();
+}
+
+function startOver(): void {
 	store.reset();
 	csvEmployeeNotFound.value = null;
 	entryCardKey.value++;
-	await history.value?.refresh();
+}
+
+async function onProcessNext(): Promise<void> {
+	if (await confirmDiscard(hasUnsavedWork)) startOver();
 }
 
 const paystubOpen = ref(false);
@@ -143,7 +151,10 @@ const paystubData = computed<PaystubData>(() => ({
 </script>
 
 <template>
-	<v-container>
+	<!-- Tighter on a phone: less padding, and dense rows so stacked cards sit closer. -->
+	<v-container :class="{ 'pa-3': xs }">
+		<h1 class="text-h5 mb-4">{{ t('nav.processPayroll') }}</h1>
+
 		<v-row dense class="mb-2">
 			<v-col cols="12" sm="6" md="4" xl="3">
 				<v-select
@@ -152,6 +163,8 @@ const paystubData = computed<PaystubData>(() => ({
 					:item-title="employeeDisplayName"
 					item-value="id"
 					:label="t('dashboard.selectEmployee')"
+					:disabled="Boolean(store.draftId)"
+					:title="store.draftId ? t('payment.draftEmployeeLocked') : undefined"
 					variant="solo-filled"
 					hide-details
 				/>
@@ -188,7 +201,7 @@ const paystubData = computed<PaystubData>(() => ({
 			{{ t('payment.csvEmployeeNotFound', { name: csvEmployeeNotFound }) }}
 		</v-alert>
 
-		<v-row>
+		<v-row :dense="xs">
 			<v-col cols="12" md="6">
 				<LoadEntryCard
 					:key="entryCardKey"
@@ -202,7 +215,7 @@ const paystubData = computed<PaystubData>(() => ({
 				/>
 			</v-col>
 			<!-- ga-4 spaces only what's rendered: no gap left by a hidden or empty load list. -->
-			<v-col cols="12" md="6" class="d-flex flex-column ga-4">
+			<v-col cols="12" md="6" class="d-flex flex-column ga-3">
 				<LoadList v-if="!store.isLumpSum" :loads="store.loads" @remove="onRemoveLoad" />
 				<PaymentSummary
 					:summary-total="store.summaryTotal"
@@ -212,9 +225,11 @@ const paystubData = computed<PaystubData>(() => ({
 					:has-payment="store.hasPayment"
 					:can-complete="canComplete"
 					:processing="processing"
+					:draft-saved="Boolean(store.draftId)"
 					@complete="onSubmit(true)"
 					@save-draft="onSubmit(false)"
 					@paystub="paystubOpen = true"
+					@process-next="onProcessNext"
 				/>
 			</v-col>
 		</v-row>
@@ -224,7 +239,7 @@ const paystubData = computed<PaystubData>(() => ({
 		<PaystubPrinter ref="printer" />
 
 		<!-- Below lg there's no room for the gutter, so the history sits under the form. -->
-		<v-row v-if="!lgAndUp">
+		<v-row v-if="!lgAndUp" :dense="xs">
 			<v-col cols="12">
 				<PaymentHistory ref="history" :collapsible="false" />
 			</v-col>

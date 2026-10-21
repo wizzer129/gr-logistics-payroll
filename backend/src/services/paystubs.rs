@@ -12,6 +12,17 @@ use crate::{
 	services::paycheck_logs,
 };
 
+/// `(id, employee_id, status)` of each of `log_ids` that exists.
+pub async fn states(
+	pool: &PgPool,
+	log_ids: &[Uuid],
+) -> Result<Vec<(Uuid, Uuid, PaycheckStatus)>, sqlx::Error> {
+	sqlx::query_as("SELECT id, employee_id, status FROM employee_paycheck_logs WHERE id = ANY($1)")
+		.bind(log_ids)
+		.fetch_all(pool)
+		.await
+}
+
 /// `None` if there's no such log.
 pub async fn status(pool: &PgPool, log_id: Uuid) -> Result<Option<PaycheckStatus>, sqlx::Error> {
 	sqlx::query_scalar("SELECT status FROM employee_paycheck_logs WHERE id = $1")

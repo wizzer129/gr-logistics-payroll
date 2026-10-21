@@ -14,7 +14,7 @@ const emit = defineEmits<{ remove: [index: number] }>();
 <template>
 	<!-- Empty on a phone renders nothing, so it leaves no gap. -->
 	<template v-if="xs">
-		<v-list v-if="loads.length" class="rounded">
+		<v-list v-if="loads.length" class="rounded" lines="two">
 			<v-list-item
 				v-for="(load, index) in loads"
 				:key="index"

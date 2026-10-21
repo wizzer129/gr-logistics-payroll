@@ -17,7 +17,7 @@ const { t } = useI18n();
 const toast = useToastStore();
 
 const month = ref(previousMonth());
-const recipients = ref<RecipientSelection>({ userIds: [], employeeIds: [] });
+const recipients = ref<RecipientSelection>({ userIds: [], employeeIds: [], emails: [] });
 const sending = ref(false);
 const maxMonth = currentMonth();
 
@@ -34,7 +34,7 @@ async function send(): Promise<void> {
 			}),
 		});
 		toast.success(t('monthlyReport.queued', { count: outboxIds.length }, outboxIds.length));
-		recipients.value = { userIds: [], employeeIds: [] };
+		recipients.value = { userIds: [], employeeIds: [], emails: [] };
 		emit('queued');
 	} catch (error) {
 		toast.fromError(error);

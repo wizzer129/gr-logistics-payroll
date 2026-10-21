@@ -12,7 +12,7 @@ import { apiJson, apiRequest } from '../../utils/api';
  */
 type OutboxEntry = {
 	id: string;
-	kind: 'test_email' | 'password_reset' | 'paystub' | 'monthly_report';
+	kind: 'test_email' | 'password_reset' | 'paystub' | 'paystubs' | 'monthly_report';
 	recipient: string;
 	status: 'pending' | 'sent' | 'failed';
 	attempts: number;

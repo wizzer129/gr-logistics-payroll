@@ -28,13 +28,13 @@
 	},
 	"nav": {
 		"dashboard": "Dashboard",
-		"paymentProcessing": "Payment Processing",
-		"editPayment": "Edit Payment",
+		"processPayroll": "Process Payroll",
 		"employees": "Employees",
 		"language": "Language",
 		"openMenu": "Open navigation menu",
 		"toggleTheme": "Toggle dark mode",
-		"settings": "Settings"
+		"settings": "Settings",
+		"payrollHistory": "Payroll History"
 	},
 	"dashboard": {
 		"ytdSummary": "Year-to-Date Summary",
@@ -106,7 +106,9 @@
 		"updated": "Paycheck saved",
 		"completed": "Paycheck completed",
 		"deleted": "Paycheck deleted",
-		"confirmDeleteTitle": "Delete paycheck?"
+		"confirmDeleteTitle": "Delete paycheck?",
+		"processNext": "Process Next",
+		"draftEmployeeLocked": "This draft is saved for this employee. Use Process Next to start another one."
 	},
 	"paystub": {
 		"title": "Pay Stub",
@@ -122,7 +124,7 @@
 		"paymentType": "Payment Type"
 	},
 	"history": {
-		"title": "Payment Process History",
+		"title": "Recently Processed",
 		"employee": "Employee",
 		"processedAt": "Processed",
 		"empty": "No payments processed yet",
@@ -196,7 +198,8 @@
 		"NO_RECIPIENTS": "Pick at least one person to send it to.",
 		"PAYCHECK_NOT_COMPLETED": "Only a completed paycheck can be emailed.",
 		"OUTBOX_EMAIL_NOT_FOUND": "Email not found",
-		"EMAIL_NOT_RETRYABLE": "This email can't be sent again"
+		"EMAIL_NOT_RETRYABLE": "This email can't be sent again",
+		"RECIPIENT_NOT_ALLOWED": "An employee can only be sent their own pay stubs. Remove them, or pick only their paychecks."
 	},
 	"unsaved": {
 		"title": "Discard unsaved changes?",
@@ -205,7 +208,9 @@
 	},
 	"recipients": {
 		"user": "User",
-		"employee": "Employee"
+		"employee": "Employee",
+		"typeHint": "Pick people, or type an address and press Enter.",
+		"invalidEmail": "Not a valid email: {emails}"
 	},
 	"settings": {
 		"monthlyTitle": "Monthly report",
@@ -224,7 +229,12 @@
 		"recipients": "Send to",
 		"send": "Send",
 		"queued": "Pay stub queued for {count} recipient | Pay stub queued for {count} recipients",
-		"saveFirst": "Save your changes first: the email sends the saved pay stub."
+		"saveFirst": "Save your changes first: the email sends the saved pay stub.",
+		"titleMany": "Email {count} pay stubs",
+		"introMany": "All the selected pay stubs go out in one email per person, one PDF each.",
+		"queuedMany": "{stubs} pay stubs queued for {count} recipient | {stubs} pay stubs queued for {count} recipients",
+		"employeesHidden": "Employees aren't listed: these pay stubs belong to more than one person, and an employee can only be sent their own.",
+		"emailSelected": "Email pay stubs"
 	},
 	"monthlyReport": {
 		"sendTitle": "Send a report now",
@@ -251,6 +261,7 @@
 			"test_email": "Test email",
 			"password_reset": "Password reset",
 			"paystub": "Pay stub",
+			"paystubs": "Pay stubs (several)",
 			"monthly_report": "Monthly report"
 		},
 		"statuses": {
@@ -278,5 +289,12 @@
 			"autumn": "Autumn",
 			"stormy": "Stormy Coral"
 		}
+	},
+	"payments": {
+		"select": "Select",
+		"selectAll": "Select all completed on this page",
+		"onlyCompleted": "Only completed paychecks can be emailed",
+		"selected": "{count} selected",
+		"clearSelection": "Clear selection"
 	}
 }

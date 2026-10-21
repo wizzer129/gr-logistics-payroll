@@ -28,6 +28,7 @@ pub enum ErrorCode {
 	ResetTokenInvalid,
 	RecipientNotFound,
 	NoRecipients,
+	RecipientNotAllowed,
 	// 401 / 403
 	NotAuthenticated,
 	SessionExpired,

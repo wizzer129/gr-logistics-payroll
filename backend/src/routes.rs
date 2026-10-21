@@ -74,6 +74,7 @@ pub fn build_app(state: AppState) -> Router {
 			"/api/email/monthly-report",
 			post(email::send_monthly_report),
 		)
+		.route("/api/email/paystubs", post(email::send_paystubs))
 		.route("/api/email/outbox", get(email::outbox))
 		.route("/api/email/outbox/{id}/retry", post(email::retry_email))
 		.route(

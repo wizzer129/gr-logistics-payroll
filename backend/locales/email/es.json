@@ -26,6 +26,16 @@
 		"attached": "El talón de pago para imprimir va adjunto en PDF.",
 		"filename": "talon-de-pago"
 	},
+	"paystubs": {
+		"subject": "Talones de pago ({{ count }})",
+		"heading": "Talones de pago",
+		"intro": "Listos para imprimir: un PDF por talón.",
+		"employee": "Empleado",
+		"work_week": "Semana de trabajo",
+		"payday": "Día de pago",
+		"total_pay": "Pago total",
+		"attached": "Los talones de pago para imprimir van adjuntos en PDF."
+	},
 	"paystub_pdf": {
 		"company": "GR Logistics",
 		"title": "Talón de Pago",

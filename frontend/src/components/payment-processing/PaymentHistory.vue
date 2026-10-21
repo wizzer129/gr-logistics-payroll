@@ -110,11 +110,7 @@ const timeFormatter = computed(
 		<v-card-text v-else-if="!loading" class="text-medium-emphasis">
 			{{ t('history.empty') }}
 		</v-card-text>
-		<EmailPaystubDialog
-			v-model="emailOpen"
-			:log-id="emailRow?.id ?? null"
-			:employee-id="emailRow?.employeeId ?? null"
-		/>
+		<EmailPaystubDialog v-model="emailOpen" :logs="emailRow ? [emailRow] : []" />
 	</v-card>
 </template>
 

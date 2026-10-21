@@ -17,8 +17,12 @@ const drawerOpen = ref(!mobile.value);
 
 const navLinks = [
 	{ to: '/', labelKey: 'nav.dashboard', icon: 'mdi-view-dashboard-outline' },
-	{ to: '/payment-processing', labelKey: 'nav.paymentProcessing', icon: 'mdi-cash-plus' },
-	{ to: '/edit-payment', labelKey: 'nav.editPayment', icon: 'mdi-file-document-edit-outline' },
+	{ to: '/process-payroll', labelKey: 'nav.processPayroll', icon: 'mdi-cash-plus' },
+	{
+		to: '/payroll-history',
+		labelKey: 'nav.payrollHistory',
+		icon: 'mdi-file-document-multiple-outline',
+	},
 	{ to: '/employees', labelKey: 'nav.employees', icon: 'mdi-account-group-outline' },
 	{ to: '/settings', labelKey: 'nav.settings', icon: 'mdi-cog-outline' },
 ];

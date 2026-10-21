@@ -126,6 +126,26 @@ pub async fn resolve(
 	))
 }
 
+/// Adds typed-in addresses to resolved ones, in `locale` (they have no saved language). An
+/// address that's already there, ignoring case, isn't added twice.
+pub fn with_typed(
+	mut recipients: Vec<Recipient>,
+	emails: &[String],
+	locale: Locale,
+) -> Vec<Recipient> {
+	let mut seen: HashSet<String> = recipients.iter().map(|r| r.email.to_lowercase()).collect();
+	for email in emails {
+		let email = email.trim();
+		if seen.insert(email.to_lowercase()) {
+			recipients.push(Recipient {
+				email: email.to_owned(),
+				locale,
+			});
+		}
+	}
+	recipients
+}
+
 fn unique(ids: &[Uuid]) -> i64 {
 	ids.iter().collect::<HashSet<_>>().len() as i64
 }

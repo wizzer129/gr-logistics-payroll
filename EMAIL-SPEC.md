@@ -7,15 +7,18 @@ recipients) plus emailed paystubs and monthly reports. Conventions in [AGENTS.md
 
 ## 1. Goals
 
-| Email          | Trigger                                                  | To                                              | Attachment  |
-| -------------- | -------------------------------------------------------- | ----------------------------------------------- | ----------- |
-| Password reset | "Forgot password?" on the login view                     | the account's email                             | —           |
-| Paystub        | "Email paystub" on a completed paycheck log              | users and/or employees picked in a multi-select | paystub PDF |
-| Monthly report | Automatically on the 1st (previous month), or "Send now" | the users chosen as report recipients           | report PDF  |
+| Email          | Trigger                                                      | To                                                             | Attachment       |
+| -------------- | ------------------------------------------------------------ | -------------------------------------------------------------- | ---------------- |
+| Password reset | "Forgot password?" on the login view                         | the account's email                                            | —                |
+| Paystub        | "Email paystub" on a completed paycheck log                  | users and/or employees picked, or typed in                     | paystub PDF      |
+| Paystubs       | "Email pay stubs" on several selected logs (Payroll History) | users picked or typed in; an employee only for their own stubs | one PDF per stub |
+| Monthly report | Automatically on the 1st (previous month), or "Send now"     | the users chosen as report recipients                          | report PDF       |
 
-Recipients are always **existing records**: users (the `users` table) and employees with an
-email. There's no free-text "send to any address" box, which keeps typos out of payroll
-email.
+Recipients are **existing records** (users, and employees with an email), picked from a
+list. Pay stub emails can also go to an **address typed in by hand** (added 2026-10 at the
+owner's request, e.g. an accountant without an account): it's validated as an email on the
+server and written in the sender's language, since it has no saved one. The monthly report
+stays picked-users-only.
 
 Non-goals: marketing/bulk email, receiving email.
 
@@ -414,7 +417,9 @@ drift, never amounts. Snapshot-ish tests on both catch accidental changes.
 
 ### Paystub email
 
-`POST /api/paycheck-logs/{id}/email` `{ userIds: uuid[], employeeIds: uuid[] }` (admin).
+`POST /api/paycheck-logs/{id}/email` `{ userIds: uuid[], employeeIds: uuid[], emails?: string[] }`
+(admin). `emails` are typed-in addresses (at most 20, each must be an email: `400
+VALIDATION_FAILED`); one already among the picked recipients (ignoring case) isn't sent twice.
 
 - Only **completed** logs can be sent: `409 PAYCHECK_NOT_COMPLETED`.
 - Both lists empty: `400 NO_RECIPIENTS`. An unknown id, an inactive employee or an
@@ -425,13 +430,25 @@ Sending happens in the outbox's compose step (`email/compose.rs`): it loads the 
 the document, renders the PDF and attaches it as `pay-stub-<name>-<week start>.pdf` (the
 prefix is translated). A log deleted before sending is a permanent failure.
 
-UI: `EmailPaystubDialog.vue` (`RecipientSelect`, with the paycheck's own employee
-pre-selected when they have an email) opens from:
+**Several at once:** `POST /api/email/paystubs` `{ paycheckLogIds: uuid[], userIds, employeeIds,
+emails }` queues one `paystubs` email per recipient, with every log's PDF attached (in the
+order given) and a table of them in the body (subject "Pay stubs (N)").
 
-- an envelope icon on each completed row in Edit Payment
-- an "Email pay stub" button in the Edit Payment dialog, disabled until changes are saved,
+- 1–50 logs (`400 VALIDATION_FAILED`). Any unknown: `404 PAYCHECK_LOG_NOT_FOUND`; any draft:
+  `409 PAYCHECK_NOT_COMPLETED`.
+- An employee can be picked only when every log is theirs, so nobody receives someone
+  else's pay: `400 RECIPIENT_NOT_ALLOWED`. The dialog doesn't offer them otherwise.
+- Logs deleted before it goes out are left out; if none are left, it fails permanently.
+
+UI: `EmailPaystubDialog.vue` (`RecipientSelect` with `allow-typed`; for one log, the
+paycheck's own employee is pre-selected when they have an email) opens from:
+
+- "Email pay stubs" in Payroll History (formerly Edit Payment / View Payments) once completed rows are
+  checked, for several at once
+- an envelope icon on each completed row in Payroll History
+- an "Email pay stub" button in Payroll History's edit dialog, disabled until changes are saved,
   since the email sends the saved log
-- an envelope icon on completed rows in the Payment Processing history panel. That's
+- an envelope icon on completed rows in Process Payroll's "Recently Processed" panel. That's
   where a just-completed payment shows up, because the processing form resets after it's
   saved.
 
@@ -479,18 +496,19 @@ nothing, so adding a recipient later that week still gets the month's report out
 
 ## 9. API summary
 
-| Method & path                              | Role          | Purpose                                                                        |
-| ------------------------------------------ | ------------- | ------------------------------------------------------------------------------ |
-| `POST /api/auth/password-reset`            | public        | request a reset link (always 202)                                              |
-| `POST /api/auth/password-reset/confirm`    | public        | set a new password with a token                                                |
-| `PUT /api/auth/me/locale`                  | any logged-in | save the user's UI language: `{ locale }`                                      |
-| `GET /api/email/recipient-options`         | admin         | `{ users: [{ id, email }], employees: [{ id, firstName, lastName, email }] }`  |
-| `GET /api/email/monthly-report/recipients` | admin         | ids of users with `receives_monthly_report`                                    |
-| `PUT /api/email/monthly-report/recipients` | admin         | replace that set: `{ userIds }`                                                |
-| `POST /api/paycheck-logs/{id}/email`       | admin         | email a paystub: `{ userIds, employeeIds }`                                    |
-| `POST /api/email/monthly-report`           | admin         | send a month's report now                                                      |
-| `GET /api/email/outbox`                    | admin         | the last 100 emails with status/error, for the "Sent emails" panel             |
-| `POST /api/email/outbox/{id}/retry`        | admin         | send a failed email again, with fresh attempts (not a scrubbed password reset) |
+| Method & path                              | Role          | Purpose                                                                                 |
+| ------------------------------------------ | ------------- | --------------------------------------------------------------------------------------- |
+| `POST /api/auth/password-reset`            | public        | request a reset link (always 202)                                                       |
+| `POST /api/auth/password-reset/confirm`    | public        | set a new password with a token                                                         |
+| `PUT /api/auth/me/locale`                  | any logged-in | save the user's UI language: `{ locale }`                                               |
+| `GET /api/email/recipient-options`         | admin         | `{ users: [{ id, email }], employees: [{ id, firstName, lastName, email }] }`           |
+| `GET /api/email/monthly-report/recipients` | admin         | ids of users with `receives_monthly_report`                                             |
+| `PUT /api/email/monthly-report/recipients` | admin         | replace that set: `{ userIds }`                                                         |
+| `POST /api/paycheck-logs/{id}/email`       | admin         | email a paystub: `{ userIds, employeeIds, emails }`                                     |
+| `POST /api/email/paystubs`                 | admin         | email several paystubs in one email: `{ paycheckLogIds, userIds, employeeIds, emails }` |
+| `POST /api/email/monthly-report`           | admin         | send a month's report now                                                               |
+| `GET /api/email/outbox`                    | admin         | the last 100 emails with status/error, for the "Sent emails" panel                      |
+| `POST /api/email/outbox/{id}/retry`        | admin         | send a failed email again, with fresh attempts (not a scrubbed password reset)          |
 
 Every handler declares its role explicitly (AGENTS.md). `PUT /api/auth/me/locale` takes
 `&[Role::Admin, Role::Employee]`, since it only touches the caller's own row.
@@ -505,6 +523,7 @@ otherwise.
 | `RESET_TOKEN_INVALID`    | 400    | unknown, expired or used reset token                             |
 | `NO_RECIPIENTS`          | 400    | a send with nobody to send to                                    |
 | `RECIPIENT_NOT_FOUND`    | 400    | an id that isn't a user, or an active employee with an email     |
+| `RECIPIENT_NOT_ALLOWED`  | 400    | an employee picked for a bulk send that includes others' stubs   |
 | `PAYCHECK_NOT_COMPLETED` | 409    | emailing a draft                                                 |
 | `OUTBOX_EMAIL_NOT_FOUND` | 404    | retrying an email id that doesn't exist                          |
 | `EMAIL_NOT_RETRYABLE`    | 409    | retrying one that isn't failed, or a password reset (scrubbed)   |

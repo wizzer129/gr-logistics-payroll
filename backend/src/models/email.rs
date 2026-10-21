@@ -36,7 +36,8 @@ pub struct MonthlyReportRecipients {
 	pub user_ids: Vec<Uuid>,
 }
 
-/// Who to email: picked users and/or employees (never typed addresses).
+/// Who to email: picked users and/or employees, plus addresses typed in by hand (written in
+/// the sender's own language, since there's no saved one).
 #[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct SendTo {
@@ -46,6 +47,24 @@ pub struct SendTo {
 	#[serde(default)]
 	#[garde(skip)]
 	pub employee_ids: Vec<Uuid>,
+	#[serde(default)]
+	#[garde(length(max = MAX_TYPED_EMAILS), inner(email))]
+	pub emails: Vec<String>,
+}
+
+pub const MAX_TYPED_EMAILS: usize = 20;
+/// Pay stubs in one bulk email: each is a PDF attachment, and providers cap the total size.
+pub const MAX_PAYSTUBS_PER_EMAIL: usize = 50;
+
+/// `POST /api/email/paystubs`: several completed logs' pay stubs in one email per recipient.
+#[derive(Debug, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct SendPaystubs {
+	#[garde(length(min = 1, max = MAX_PAYSTUBS_PER_EMAIL))]
+	pub paycheck_log_ids: Vec<Uuid>,
+	#[serde(flatten)]
+	#[garde(dive)]
+	pub to: SendTo,
 }
 
 /// One outbox row per recipient.

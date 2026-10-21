@@ -14,7 +14,7 @@ const { t } = useI18n();
 const toast = useToastStore();
 
 // Monthly report recipients: users only (the report shows everyone's pay).
-const recipients = ref<RecipientSelection>({ userIds: [], employeeIds: [] });
+const recipients = ref<RecipientSelection>({ userIds: [], employeeIds: [], emails: [] });
 const saved = ref<string[]>([]);
 const loading = ref(false);
 const saving = ref(false);
@@ -32,7 +32,7 @@ onMounted(async () => {
 		const { userIds } = await apiJson<{ userIds: string[] }>(
 			'/api/email/monthly-report/recipients',
 		);
-		recipients.value = { userIds, employeeIds: [] };
+		recipients.value = { userIds, employeeIds: [], emails: [] };
 		saved.value = userIds;
 	} catch (error) {
 		toast.fromError(error);
@@ -52,7 +52,7 @@ async function save(): Promise<void> {
 				body: JSON.stringify({ userIds: recipients.value.userIds }),
 			},
 		);
-		recipients.value = { userIds, employeeIds: [] };
+		recipients.value = { userIds, employeeIds: [], emails: [] };
 		saved.value = userIds;
 		toast.success(t('settings.monthlySaved'));
 	} catch (error) {

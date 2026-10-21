@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// One variant per kind of email. The serialized tag is the outbox `kind` and must match
-/// that column's CHECK constraint (migration 0010).
+/// that column's CHECK constraint (migrations 0010, 0017).
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Message {
@@ -16,6 +16,9 @@ pub enum Message {
 	PasswordReset { reset_url: String },
 	/// Rendered from the log as it is when the email goes out, with the PDF attached.
 	Paystub { paycheck_log_id: Uuid },
+	/// Several logs' pay stubs in one email, one PDF each (Payroll History's bulk send). Logs
+	/// deleted before it goes out are left out; if none are left, it fails.
+	Paystubs { paycheck_log_ids: Vec<Uuid> },
 	/// The month starting on `month` (always the 1st), with the PDF attached. Built from the
 	/// data as it is at send time.
 	MonthlyReport { month: NaiveDate },
@@ -27,6 +30,7 @@ impl Message {
 			Self::TestEmail { .. } => "test_email",
 			Self::PasswordReset { .. } => "password_reset",
 			Self::Paystub { .. } => "paystub",
+			Self::Paystubs { .. } => "paystubs",
 			Self::MonthlyReport { .. } => "monthly_report",
 		}
 	}
@@ -38,6 +42,7 @@ impl Message {
 			Self::TestEmail { .. } => "test-email",
 			Self::PasswordReset { .. } => "password-reset",
 			Self::Paystub { .. } => "paystub",
+			Self::Paystubs { .. } => "paystubs",
 			Self::MonthlyReport { .. } => "monthly-report",
 		}
 	}

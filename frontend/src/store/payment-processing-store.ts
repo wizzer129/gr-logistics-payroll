@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { calculateEmployeeCut, DEFAULT_PAY_RATE_PERCENT } from '../utils/payment-calc';
 import { getWeekRange, toIsoDate } from '../utils/week';
-import { apiRequest } from '../utils/api';
+import { apiJson, apiRequest } from '../utils/api';
 import { i18n } from '../plugins/i18n';
 
 export type Load = {
@@ -23,6 +23,10 @@ export const usePaymentProcessingStore = defineStore('payment-processing', () =>
 	const loads = ref<Load[]>([]);
 	const mode = ref<PaymentMode>('loads');
 	const lumpSum = ref<number>(0);
+	// Once saved as a draft, the form stays open on it: saving again or completing updates
+	// that log instead of creating another. `savedState` is what was saved, for `isDirty`.
+	const draftId = ref<string | null>(null);
+	const savedState = ref<string | null>(null);
 
 	const isLumpSum = computed(() => mode.value === 'lumpSum');
 	const weekRange = computed(() => getWeekRange(selectedDate.value));
@@ -54,22 +58,44 @@ export const usePaymentProcessingStore = defineStore('payment-processing', () =>
 		loads.value.splice(index, 1);
 	}
 
-	/** `complete` saves it as completed; otherwise it's saved as a draft. */
+	/** What a save sends, minus `complete`. The employee is only sent on create. */
+	const payload = computed(() => ({
+		weekStart: weekRange.value.weekStart,
+		weekEnd: weekRange.value.weekEnd,
+		payday: payday.value,
+		...(isLumpSum.value ? { lumpSum: lumpSum.value } : { loads: loads.value }),
+	}));
+
+	/** Anything entered that isn't saved: since the last draft save, or at all. */
+	const isDirty = computed(() =>
+		draftId.value
+			? JSON.stringify(payload.value) !== savedState.value
+			: loads.value.length > 0 || lumpSum.value > 0,
+	);
+
+	/**
+	 * `complete` saves it as completed; otherwise it's saved as a draft and stays open. An
+	 * open draft is updated in place (its employee can't change; see the view).
+	 */
 	async function submit({ complete }: { complete: boolean }): Promise<void> {
 		if (!employeeId.value) throw new Error(i18n.global.t('payment.noEmployee'));
+		const body = { ...payload.value, complete };
 
-		await apiRequest('/api/paycheck-logs', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				employeeId: employeeId.value,
-				weekStart: weekRange.value.weekStart,
-				weekEnd: weekRange.value.weekEnd,
-				payday: payday.value,
-				...(isLumpSum.value ? { lumpSum: lumpSum.value } : { loads: loads.value }),
-				complete,
-			}),
-		});
+		if (draftId.value) {
+			await apiRequest(`/api/paycheck-logs/${draftId.value}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body),
+			});
+		} else {
+			const created = await apiJson<{ id: string }>('/api/paycheck-logs', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ employeeId: employeeId.value, ...body }),
+			});
+			draftId.value = created.id;
+		}
+		savedState.value = JSON.stringify(payload.value);
 	}
 
 	function reset(): void {
@@ -80,6 +106,8 @@ export const usePaymentProcessingStore = defineStore('payment-processing', () =>
 		loads.value = [];
 		mode.value = 'loads';
 		lumpSum.value = 0;
+		draftId.value = null;
+		savedState.value = null;
 	}
 
 	return {
@@ -96,6 +124,8 @@ export const usePaymentProcessingStore = defineStore('payment-processing', () =>
 		effectiveRatePercent,
 		cut,
 		hasPayment,
+		draftId,
+		isDirty,
 		addLoad,
 		replaceLoads,
 		removeLoad,

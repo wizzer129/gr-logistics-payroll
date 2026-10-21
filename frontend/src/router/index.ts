@@ -30,17 +30,21 @@ const router = createRouter({
 			meta: { requiresAuth: true, roles: ['admin'] },
 		},
 		{
-			path: '/payment-processing',
-			name: 'payment-processing',
-			component: () => import('../views/PaymentProcessingView.vue'),
+			path: '/process-payroll',
+			name: 'process-payroll',
+			component: () => import('../views/ProcessPayrollView.vue'),
 			meta: { requiresAuth: true, roles: ['admin'] },
 		},
 		{
-			path: '/edit-payment',
-			name: 'edit-payment',
-			component: () => import('../views/EditPaymentView.vue'),
+			path: '/payroll-history',
+			name: 'payroll-history',
+			component: () => import('../views/PayrollHistoryView.vue'),
 			meta: { requiresAuth: true, roles: ['admin'] },
 		},
+		// Their old names (Payment Processing, Edit Payment / View Payments): bookmarks still work.
+		{ path: '/payment-processing', redirect: { name: 'process-payroll' } },
+		{ path: '/edit-payment', redirect: { name: 'payroll-history' } },
+		{ path: '/payments', redirect: { name: 'payroll-history' } },
 		{
 			path: '/settings',
 			name: 'settings',

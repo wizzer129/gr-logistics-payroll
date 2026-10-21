@@ -28,13 +28,13 @@
 	},
 	"nav": {
 		"dashboard": "Panel",
-		"paymentProcessing": "Procesamiento de Pagos",
-		"editPayment": "Editar Pago",
+		"processPayroll": "Procesar Nómina",
 		"employees": "Empleados",
 		"language": "Idioma",
 		"openMenu": "Abrir menú de navegación",
 		"toggleTheme": "Alternar modo oscuro",
-		"settings": "Configuración"
+		"settings": "Configuración",
+		"payrollHistory": "Historial de Nómina"
 	},
 	"dashboard": {
 		"ytdSummary": "Resumen del Año",
@@ -106,7 +106,9 @@
 		"updated": "Pago guardado",
 		"completed": "Pago completado",
 		"deleted": "Pago eliminado",
-		"confirmDeleteTitle": "¿Eliminar pago?"
+		"confirmDeleteTitle": "¿Eliminar pago?",
+		"processNext": "Procesar Siguiente",
+		"draftEmployeeLocked": "Este borrador está guardado para este empleado. Use Procesar Siguiente para empezar otro."
 	},
 	"paystub": {
 		"title": "Talón de Pago",
@@ -122,7 +124,7 @@
 		"paymentType": "Tipo de Pago"
 	},
 	"history": {
-		"title": "Historial de Pagos Procesados",
+		"title": "Procesados Recientemente",
 		"employee": "Empleado",
 		"processedAt": "Procesado",
 		"empty": "Aún no se han procesado pagos",
@@ -196,7 +198,8 @@
 		"NO_RECIPIENTS": "Elija al menos una persona a quien enviarlo.",
 		"PAYCHECK_NOT_COMPLETED": "Solo se puede enviar por correo un pago completado.",
 		"OUTBOX_EMAIL_NOT_FOUND": "Correo no encontrado",
-		"EMAIL_NOT_RETRYABLE": "Este correo no se puede volver a enviar"
+		"EMAIL_NOT_RETRYABLE": "Este correo no se puede volver a enviar",
+		"RECIPIENT_NOT_ALLOWED": "A un empleado solo se le pueden enviar sus propios talones. Quítelo, o elija solo sus pagos."
 	},
 	"unsaved": {
 		"title": "¿Descartar cambios sin guardar?",
@@ -205,7 +208,9 @@
 	},
 	"recipients": {
 		"user": "Usuario",
-		"employee": "Empleado"
+		"employee": "Empleado",
+		"typeHint": "Elija personas, o escriba un correo y presione Enter.",
+		"invalidEmail": "Correo no válido: {emails}"
 	},
 	"settings": {
 		"monthlyTitle": "Reporte mensual",
@@ -224,7 +229,12 @@
 		"recipients": "Enviar a",
 		"send": "Enviar",
 		"queued": "Talón en cola para {count} destinatario | Talón en cola para {count} destinatarios",
-		"saveFirst": "Guarde sus cambios primero: el correo envía el talón guardado."
+		"saveFirst": "Guarde sus cambios primero: el correo envía el talón guardado.",
+		"titleMany": "Enviar {count} talones por correo",
+		"introMany": "Todos los talones seleccionados van en un solo correo por persona, un PDF cada uno.",
+		"queuedMany": "{stubs} talones en cola para {count} destinatario | {stubs} talones en cola para {count} destinatarios",
+		"employeesHidden": "No se muestran empleados: estos talones son de más de una persona, y a un empleado solo se le pueden enviar los suyos.",
+		"emailSelected": "Enviar talones"
 	},
 	"monthlyReport": {
 		"sendTitle": "Enviar un reporte ahora",
@@ -251,6 +261,7 @@
 			"test_email": "Correo de prueba",
 			"password_reset": "Restablecer contraseña",
 			"paystub": "Talón de pago",
+			"paystubs": "Talones de pago (varios)",
 			"monthly_report": "Reporte mensual"
 		},
 		"statuses": {
@@ -278,5 +289,12 @@
 			"autumn": "Otoño",
 			"stormy": "Coral Tormentoso"
 		}
+	},
+	"payments": {
+		"select": "Seleccionar",
+		"selectAll": "Seleccionar todos los completados de esta página",
+		"onlyCompleted": "Solo se pueden enviar pagos completados",
+		"selected": "{count} seleccionados",
+		"clearSelection": "Quitar selección"
 	}
 }
