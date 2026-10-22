@@ -5,7 +5,7 @@ import { formatCurrency } from '../../utils/currency';
 
 const { t } = useI18n();
 // On a phone the three buttons stack full width instead of wrapping unevenly.
-const { xs } = useDisplay();
+const { xs, sm, md } = useDisplay();
 
 const props = defineProps<{
 	summaryTotal: number;
@@ -30,7 +30,7 @@ const emit = defineEmits<{
 
 <template>
 	<!-- Two cards: the totals, and (once there's something to save) what to do with them. -->
-	<div :class="['d-flex', 'flex-column', xs ? 'ga-3' : 'ga-4 mt-12']">
+	<div :class="['d-flex', 'flex-column', xs || sm || md ? 'ga-3' : 'ga-4 mt-12']">
 		<v-card>
 			<v-card-text>
 				<div class="d-flex justify-space-between py-1">

@@ -33,7 +33,7 @@ const emit = defineEmits<{ remove: [index: number] }>();
 			</v-list-item>
 		</v-list>
 	</template>
-	<v-table v-else density="comfortable" striped="odd">
+	<v-table v-else-if="loads.length" density="comfortable" striped="odd">
 		<thead>
 			<tr>
 				<th class="text-start">{{ t('payment.date') }}</th>
