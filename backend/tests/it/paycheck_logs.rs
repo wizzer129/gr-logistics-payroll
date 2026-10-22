@@ -378,13 +378,15 @@ async fn list_filters_and_orders_newest_first(pool: PgPool) {
 	let ana = ctx.employee(json!(42)).await;
 	let other = ctx.employee(json!(42)).await;
 
-	for (employee, start, end) in [
-		(&ana, "2026-09-20", "2026-09-26"),
-		(&ana, "2026-10-04", "2026-10-10"),
-		(&other, "2026-09-27", "2026-10-03"),
+	// Paid on the week's last day; only the newest is completed.
+	for (employee, start, end, complete) in [
+		(&ana, "2026-09-20", "2026-09-26", false),
+		(&ana, "2026-10-04", "2026-10-10", true),
+		(&other, "2026-09-27", "2026-10-03", false),
 	] {
 		let body = json!({
 			"employeeId": employee, "weekStart": start, "weekEnd": end, "payday": end,
+			"complete": complete,
 			"loads": [{ "storeName": "A", "loadDate": start, "pay": 10 }],
 		});
 		assert_eq!(
@@ -424,6 +426,31 @@ async fn list_filters_and_orders_newest_first(pool: PgPool) {
 		)
 		.await;
 	assert_eq!(weeks(&ranged), ["2026-09-27"]);
+
+	let paid = ctx
+		.req(
+			"GET",
+			"/api/paycheck-logs?paydayFrom=2026-09-27&paydayTo=2026-10-03",
+			None,
+		)
+		.await;
+	assert_eq!(weeks(&paid), ["2026-09-27"], "paid Oct 3");
+	let paid_by = ctx
+		.req("GET", "/api/paycheck-logs?paydayTo=2026-09-26", None)
+		.await;
+	assert_eq!(weeks(&paid_by), ["2026-09-20"]);
+
+	let completed = ctx
+		.req("GET", "/api/paycheck-logs?status=completed", None)
+		.await;
+	assert_eq!(weeks(&completed), ["2026-10-04"]);
+	let anas_drafts = format!("/api/paycheck-logs?status=draft&employeeId={ana}");
+	let drafts = ctx.req("GET", &anas_drafts, None).await;
+	assert_eq!(weeks(&drafts), ["2026-09-20"]);
+	let unknown_status = ctx
+		.req("GET", "/api/paycheck-logs?status=pending", None)
+		.await;
+	assert_eq!(unknown_status.status, 400);
 
 	let bad = ctx
 		.req("GET", "/api/paycheck-logs?employeeId=abc", None)

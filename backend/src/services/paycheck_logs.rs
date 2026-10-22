@@ -53,11 +53,17 @@ pub async fn list(
          WHERE ($1::uuid IS NULL OR pl.employee_id = $1)
          AND ($2::date IS NULL OR pl.week_start >= $2)
          AND ($3::date IS NULL OR pl.week_end <= $3)
+         AND ($4::date IS NULL OR pl.payday >= $4)
+         AND ($5::date IS NULL OR pl.payday <= $5)
+         AND ($6::text IS NULL OR pl.status = $6)
          ORDER BY pl.week_start DESC",
 	)
 	.bind(filter.employee_id)
 	.bind(filter.from)
 	.bind(filter.to)
+	.bind(filter.payday_from)
+	.bind(filter.payday_to)
+	.bind(filter.status)
 	.fetch_all(pool)
 	.await
 }

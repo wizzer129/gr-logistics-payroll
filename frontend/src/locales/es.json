@@ -295,6 +295,11 @@
 		"selectAll": "Seleccionar todos los completados de esta página",
 		"onlyCompleted": "Solo se pueden enviar pagos completados",
 		"selected": "{count} seleccionados",
-		"clearSelection": "Quitar selección"
+		"clearSelection": "Quitar selección",
+		"paydayFrom": "Día de pago desde",
+		"paydayTo": "Día de pago hasta",
+		"statusAll": "Todos",
+		"statusIncomplete": "Incompletos",
+		"statusCompleted": "Completados"
 	}
 }

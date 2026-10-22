@@ -80,6 +80,12 @@ pub struct PaycheckLogFilter {
 	pub from: Option<NaiveDate>,
 	/// Logs whose week ends on or before this date.
 	pub to: Option<NaiveDate>,
+	/// Logs paid on or after this date (Payroll History's filter).
+	pub payday_from: Option<NaiveDate>,
+	/// Logs paid on or before this date.
+	pub payday_to: Option<NaiveDate>,
+	/// `draft` or `completed`; both if absent.
+	pub status: Option<PaycheckStatus>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Validate)]

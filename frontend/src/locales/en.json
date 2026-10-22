@@ -295,6 +295,11 @@
 		"selectAll": "Select all completed on this page",
 		"onlyCompleted": "Only completed paychecks can be emailed",
 		"selected": "{count} selected",
-		"clearSelection": "Clear selection"
+		"clearSelection": "Clear selection",
+		"paydayFrom": "Payday from",
+		"paydayTo": "Payday to",
+		"statusAll": "All",
+		"statusIncomplete": "Incomplete",
+		"statusCompleted": "Completed"
 	}
 }

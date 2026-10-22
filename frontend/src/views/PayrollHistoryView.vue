@@ -29,8 +29,17 @@ const { confirmDiscard, guardLeave } = useUnsavedChanges();
 const { employees, loadEmployees } = useEmployees();
 
 const employeeId = ref<string | null>(null);
-const from = ref('');
-const to = ref('');
+// Filtered by when it was paid, not by its work week.
+const paydayFrom = ref('');
+const paydayTo = ref('');
+// "Incomplete" is a draft.
+type StatusFilter = 'all' | 'draft' | 'completed';
+const status = ref<StatusFilter>('all');
+const statusItems = computed(() => [
+	{ title: t('payments.statusAll'), value: 'all' },
+	{ title: t('payments.statusIncomplete'), value: 'draft' },
+	{ title: t('payments.statusCompleted'), value: 'completed' },
+]);
 const results = ref<PaycheckLogRow[]>([]);
 
 // --- Pagination (client-side: the list endpoint returns every matching log) ---
@@ -69,8 +78,9 @@ function employeeDisplayName(employee: EmployeeOption): string {
 async function search(): Promise<void> {
 	const params = new URLSearchParams();
 	if (employeeId.value) params.set('employeeId', employeeId.value);
-	if (from.value) params.set('from', from.value);
-	if (to.value) params.set('to', to.value);
+	if (paydayFrom.value) params.set('paydayFrom', paydayFrom.value);
+	if (paydayTo.value) params.set('paydayTo', paydayTo.value);
+	if (status.value !== 'all') params.set('status', status.value);
 
 	// Backend already orders week_start DESC — latest to oldest by default.
 	try {
@@ -81,9 +91,9 @@ async function search(): Promise<void> {
 	}
 }
 
-// The employee dropdown is the primary filter — apply it immediately rather than waiting
-// for the Search button, which stays for the secondary date-range filters.
-watch(employeeId, search);
+// The employee and status dropdowns apply immediately; the Search button is for the payday
+// range, which would otherwise search on every keystroke.
+watch([employeeId, status], search);
 
 onMounted(() => {
 	loadEmployees();
@@ -289,7 +299,7 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 		<h1 class="text-h5 mb-4">{{ t('nav.payrollHistory') }}</h1>
 
 		<v-row dense class="mb-2">
-			<v-col cols="12" md="4">
+			<v-col cols="12" md="3">
 				<v-select
 					v-model="employeeId"
 					:items="employees"
@@ -301,11 +311,29 @@ async function onDelete(log: PaycheckLogRow): Promise<void> {
 					hide-details
 				/>
 			</v-col>
-			<v-col cols="6" md="3">
-				<v-text-field v-model="from" :label="t('common.from')" type="date" hide-details />
+			<v-col cols="6" md="2">
+				<v-text-field
+					v-model="paydayFrom"
+					:label="t('payments.paydayFrom')"
+					type="date"
+					hide-details
+				/>
 			</v-col>
-			<v-col cols="6" md="3">
-				<v-text-field v-model="to" :label="t('common.to')" type="date" hide-details />
+			<v-col cols="6" md="2">
+				<v-text-field
+					v-model="paydayTo"
+					:label="t('payments.paydayTo')"
+					type="date"
+					hide-details
+				/>
+			</v-col>
+			<v-col cols="12" md="3">
+				<v-select
+					v-model="status"
+					:items="statusItems"
+					:label="t('payment.status')"
+					hide-details
+				/>
 			</v-col>
 			<v-col cols="12" md="2" class="d-flex align-center">
 				<v-btn block color="primary" size="large" @click="search">{{
